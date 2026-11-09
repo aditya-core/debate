@@ -15,23 +15,39 @@ export default function EarlyAccess({
   body: string;
 }) {
   return (
-    <main className="relative flex min-h-[100svh] flex-col items-center justify-center px-6">
-      <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(70%_60%_at_50%_20%,rgba(121,69,232,0.18),transparent_60%)]" />
+    <div className="relative isolate flex min-h-[68vh] flex-col items-center justify-center px-6 py-20 text-center">
+      <div className="pointer-events-none absolute inset-0 -z-10">
+        <div
+          className="orb"
+          style={{
+            width: 420,
+            height: 420,
+            top: -80,
+            left: "50%",
+            transform: "translateX(-50%)",
+            background:
+              "radial-gradient(circle, var(--c-brand) 0%, transparent 70%)",
+            opacity: 0.16,
+          }}
+        />
+      </div>
 
       <p className="eyebrow">{eyebrow}</p>
-      <h1 className="mt-6 max-w-[18ch] text-center font-display text-[clamp(2rem,5vw,3.4rem)] font-medium leading-[1.02] tracking-[-0.03em]">
+      <h1 className="mt-6 max-w-[18ch] font-display text-[clamp(2rem,5vw,3.2rem)] font-medium leading-[1.03] tracking-[-0.035em] text-fg">
         {title}
       </h1>
-      <p className="mt-5 max-w-[46ch] text-center text-[0.95rem] leading-[1.7] text-paper/55">
+      <p className="mt-5 max-w-[46ch] text-[0.95rem] leading-[1.7] text-muted">
         {body}
       </p>
 
-      <Link href="/" className="btn-ghost mt-10">
-        <span aria-hidden="true" className="arrow rotate-90">
-          ↓
-        </span>
-        Back to the beginning
-      </Link>
-    </main>
+      <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
+        <Link href="/develop" className="btn btn-primary">
+          See what we&rsquo;re building
+        </Link>
+        <Link href="/" className="btn btn-outline">
+          Back to the beginning
+        </Link>
+      </div>
+    </div>
   );
 }

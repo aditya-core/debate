@@ -1,17 +1,21 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
+import ThemeToggle from "./ThemeToggle";
 
 const LINKS = [
-  { label: "Explore", href: "#explore" },
-  { label: "Our Vision", href: "#vision" },
+  { label: "How it works", href: "/#how" },
+  { label: "Worlds", href: "/#worlds" },
+  { label: "Progress", href: "/develop" },
+  { label: "Vision", href: "/#vision" },
 ];
 
-function Mark() {
+export function Mark({ size = 26 }: { size?: number }) {
   return (
     <svg
-      width="26"
-      height="26"
+      width={size}
+      height={size}
       viewBox="0 0 24 24"
       fill="none"
       aria-hidden="true"
@@ -19,32 +23,14 @@ function Mark() {
     >
       <defs>
         <linearGradient id="gow-mark" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#7945E8" />
-          <stop offset="55%" stopColor="#258BFF" />
-          <stop offset="100%" stopColor="#53D8E8" />
+          <stop offset="0%" stopColor="var(--c-brand)" />
+          <stop offset="55%" stopColor="var(--c-sky)" />
+          <stop offset="100%" stopColor="var(--c-aqua)" />
         </linearGradient>
       </defs>
-      {/* Three lines of text resolving into one voice. */}
-      <path
-        d="M3.2 17.4h7.2"
-        stroke="url(#gow-mark)"
-        strokeWidth="2.1"
-        strokeLinecap="round"
-      />
-      <path
-        d="M6.4 12h8.6"
-        stroke="url(#gow-mark)"
-        strokeWidth="2.1"
-        strokeLinecap="round"
-        opacity="0.85"
-      />
-      <path
-        d="M9.8 6.6H21"
-        stroke="url(#gow-mark)"
-        strokeWidth="2.1"
-        strokeLinecap="round"
-        opacity="0.7"
-      />
+      <path d="M2.6 18.2h7.6" stroke="url(#gow-mark)" strokeWidth="2.4" strokeLinecap="round" />
+      <path d="M6 12h9" stroke="url(#gow-mark)" strokeWidth="2.4" strokeLinecap="round" opacity="0.8" />
+      <path d="M9.6 5.8h11.8" stroke="url(#gow-mark)" strokeWidth="2.4" strokeLinecap="round" opacity="0.6" />
     </svg>
   );
 }
@@ -54,7 +40,7 @@ export default function Nav() {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 24);
+    const onScroll = () => setScrolled(window.scrollY > 12);
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
@@ -68,121 +54,132 @@ export default function Nav() {
   }, [open]);
 
   return (
-    <header
-      className={[
-        "fixed inset-x-0 top-0 z-40 transition-all duration-700",
+    <>
+      <header
+        className={[
+        "sticky top-0 z-50 transition-all duration-500",
         scrolled
-          ? "border-b border-paper/[0.07] bg-ink/70 backdrop-blur-xl"
+          ? "border-b border-line bg-canvas/80 backdrop-blur-xl"
           : "border-b border-transparent bg-transparent",
       ].join(" ")}
     >
-      <nav
-        aria-label="Primary"
-        className="mx-auto flex h-[68px] w-full max-w-[1440px] items-center justify-between px-6 sm:px-8 lg:px-14"
-      >
-        <a
-          href="#top"
-          className="group flex items-center gap-2.5"
-          aria-label="Gift of Words — home"
+        <nav
+          aria-label="Primary"
+          className="shell flex h-[70px] items-center justify-between gap-6"
         >
+        <Link href="/" className="flex items-center gap-2.5">
           <Mark />
-          <span className="font-display text-[0.78rem] font-medium uppercase tracking-[0.28em] text-paper/85 transition-colors duration-500 group-hover:text-paper">
+          <span className="font-display text-[0.8rem] font-medium uppercase tracking-[0.24em] text-fg">
             Gift of Words
           </span>
-        </a>
+        </Link>
 
-        <div className="hidden items-center gap-9 md:flex">
-          {LINKS.map((link) => (
-            <a key={link.href} href={link.href} className="nav-link">
-              {link.label}
-            </a>
+        <div className="hidden items-center gap-8 lg:flex">
+          {LINKS.map((l) => (
+            <Link
+              key={l.href}
+              href={l.href}
+              className="link-underline font-display text-[0.85rem] text-muted hover:text-fg"
+            >
+              {l.label}
+            </Link>
           ))}
         </div>
 
-        <div className="hidden items-center gap-5 md:flex">
-          <a href="/signin" className="nav-link">
+        <div className="hidden items-center gap-3 md:flex">
+          <ThemeToggle />
+          <Link
+            href="/signin"
+            className="link-underline px-1 font-display text-[0.85rem] text-muted hover:text-fg"
+          >
             Sign in
-          </a>
-          <a href="/signup" className="btn-nav">
+          </Link>
+          <Link href="/signup" className="btn btn-primary btn-sm">
             Get started
-          </a>
+          </Link>
         </div>
 
-        <button
-          type="button"
-          onClick={() => setOpen((v) => !v)}
-          aria-expanded={open}
-          aria-controls="mobile-menu"
-          aria-label={open ? "Close menu" : "Open menu"}
-          className="relative z-50 flex h-10 w-10 flex-col items-center justify-center gap-[5px] md:hidden"
-        >
-          <span
-            className={[
-              "block h-[1.5px] w-5 bg-paper transition-all duration-500",
-              open ? "translate-y-[6.5px] rotate-45" : "",
-            ].join(" ")}
-          />
-          <span
-            className={[
-              "block h-[1.5px] w-5 bg-paper transition-all duration-300",
-              open ? "opacity-0" : "opacity-100",
-            ].join(" ")}
-          />
-          <span
-            className={[
-              "block h-[1.5px] w-5 bg-paper transition-all duration-500",
-              open ? "-translate-y-[6.5px] -rotate-45" : "",
-            ].join(" ")}
-          />
-        </button>
-      </nav>
+        <div className="flex items-center gap-2 md:hidden">
+          <ThemeToggle />
+          <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            aria-expanded={open}
+            aria-controls="mobile-menu"
+            aria-label={open ? "Close menu" : "Open menu"}
+            className="relative z-50 flex h-10 w-10 flex-col items-center justify-center gap-[5px] rounded-full border border-line"
+          >
+            <span
+              className={[
+                "block h-[1.5px] bg-fg transition-all duration-300",
+                open ? "translate-y-[6.5px] rotate-45" : "",
+              ].join(" ")}
+              style={{ width: 18 }}
+            />
+            <span
+              className={[
+                "block h-[1.5px] bg-fg transition-all duration-300",
+                open ? "opacity-0" : "opacity-100",
+              ].join(" ")}
+              style={{ width: 18 }}
+            />
+            <span
+              className={[
+                "block h-[1.5px] bg-fg transition-all duration-300",
+                open ? "-translate-y-[6.5px] -rotate-45" : "",
+              ].join(" ")}
+              style={{ width: 18 }}
+            />
+          </button>
+        </div>
+        </nav>
+      </header>
 
-      {/* Full-screen mobile panel */}
+      {/* Mobile panel — outside <header>: when the header has a backdrop
+          filter, it becomes the containing block for fixed children. */}
       <div
         id="mobile-menu"
         className={[
-          "fixed inset-0 z-40 flex flex-col justify-center bg-ink/97 px-8 backdrop-blur-2xl transition-all duration-500 md:hidden",
-          open
-            ? "pointer-events-auto opacity-100"
-            : "pointer-events-none opacity-0",
+          "fixed inset-0 z-40 flex flex-col justify-between bg-canvas px-6 pb-10 pt-24 transition-all duration-300 md:hidden",
+          open ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0",
         ].join(" ")}
       >
-        <div className="flex flex-col gap-2">
-          {LINKS.map((link, i) => (
-            <a
-              key={link.href}
-              href={link.href}
+        <div className="flex flex-col">
+          {LINKS.map((l, i) => (
+            <Link
+              key={l.href}
+              href={l.href}
               onClick={() => setOpen(false)}
-              style={{ transitionDelay: open ? `${80 + i * 60}ms` : "0ms" }}
+              style={{ transitionDelay: open ? `${70 + i * 55}ms` : "0ms" }}
               className={[
-                "border-b border-paper/[0.07] py-5 font-display text-3xl tracking-tight text-paper/85 transition-all duration-500",
-                open ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0",
+                "border-b border-line py-4 font-display text-2xl tracking-tight text-fg transition-all duration-500",
+                open ? "translate-y-0 opacity-100" : "translate-y-3 opacity-0",
               ].join(" ")}
             >
-              {link.label}
-            </a>
+              {l.label}
+            </Link>
           ))}
-          <a
+          <Link
             href="/signin"
             onClick={() => setOpen(false)}
-            style={{ transitionDelay: open ? "200ms" : "0ms" }}
+            style={{ transitionDelay: open ? "290ms" : "0ms" }}
             className={[
-              "border-b border-paper/[0.07] py-5 font-display text-3xl tracking-tight text-paper/85 transition-all duration-500",
-              open ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0",
+              "border-b border-line py-4 font-display text-2xl tracking-tight text-muted transition-all duration-500",
+              open ? "translate-y-0 opacity-100" : "translate-y-3 opacity-0",
             ].join(" ")}
           >
             Sign in
-          </a>
+          </Link>
         </div>
 
-        <a
+        <Link
           href="/signup"
           onClick={() => setOpen(false)}
-          className="btn-primary mt-10 w-fit"
+          className="btn btn-primary w-full"
         >
           Begin your journey <span aria-hidden="true">↗</span>
-        </a>
+        </Link>
       </div>
-    </header>
+    </>
   );
 }

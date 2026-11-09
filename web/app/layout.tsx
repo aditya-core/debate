@@ -1,46 +1,62 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import Nav from "@/components/Nav";
+import Footer from "@/components/Footer";
+import ScrollReveal from "@/components/ScrollReveal";
 
 export const metadata: Metadata = {
   title: "Gift of Words — Unlock the power of your words",
   description:
-    "An intelligent communication training experience designed to help you sharpen your thinking, strengthen your expression and make your voice matter.",
+    "An intelligent communication training experience for debate, extempore and thinking on your feet — with feedback specific enough to change how you speak.",
   metadataBase: new URL("https://giftofwords.app"),
   openGraph: {
-    title: "Gift of Words — Unlock the power of your words",
+    title: "Gift of Words",
     description:
       "Think clearly. Speak confidently. Communicate exceptionally.",
     type: "website",
   },
-  robots: { index: true, follow: true },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#10111D",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f6f1e9" },
+    { media: "(prefers-color-scheme: dark)", color: "#08070f" },
+  ],
   width: "device-width",
   initialScale: 1,
 };
 
 /**
- * Runs before first paint. Everything that animates is hidden by CSS only
- * when this attribute is present, so a JS-less or slow-connection visitor
- * sees a complete, readable page instead of an empty one.
+ * Runs before first paint:
+ *  1. resolves the theme (stored choice → system preference) with no flash,
+ *  2. marks the document as JS-capable,
+ *  3. guarantees content becomes visible even if the motion layer fails.
  */
-const NO_FLASH = `
-    document.documentElement.dataset.js = "1";
-    window.addEventListener("load", function () {
-      // If the entrance choreography never runs, reveal everything anyway.
-      setTimeout(function () {
-        document.documentElement.classList.add("reveal-fallback");
-      }, 4500);
-    });
-  `;
+const BOOT = `
+(function () {
+  var root = document.documentElement;
+  try {
+    var stored = localStorage.getItem("gow-theme");
+    var system = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    root.dataset.theme =
+      stored === "dark" || stored === "light" ? stored : system ? "dark" : "light";
+  } catch (e) {
+    root.dataset.theme = "light";
+  }
+  root.dataset.js = "1";
+  window.addEventListener("load", function () {
+    setTimeout(function () {
+      root.classList.add("reveal-fallback");
+    }, 4000);
+  });
+})();
+`;
 
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" data-theme="light" suppressHydrationWarning>
       <head>
         <link
           rel="preload"
@@ -56,20 +72,20 @@ export default function RootLayout({
           type="font/woff2"
           crossOrigin="anonymous"
         />
+        <script dangerouslySetInnerHTML={{ __html: BOOT }} />
       </head>
-      <body className="bg-ink text-paper antialiased">
-        <script dangerouslySetInnerHTML={{ __html: NO_FLASH }} />
-
+      <body>
         <a
           href="#main"
-          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[60] focus:rounded-md focus:bg-ink-2 focus:px-4 focus:py-2 focus:text-sm"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[60] focus:rounded-lg focus:bg-fg focus:px-4 focus:py-2 focus:text-sm focus:text-canvas"
         >
           Skip to content
         </a>
 
-        {children}
-
-        <div className="grain-layer" aria-hidden="true" />
+        <Nav />
+        <main id="main">{children}</main>
+        <Footer />
+        <ScrollReveal />
       </body>
     </html>
   );

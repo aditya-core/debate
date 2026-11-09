@@ -338,3 +338,53 @@ Account (GOW-USER-XXXXX)        ← one login, one billing, one overall profile
 
 **Open:** visual QA by Aditya on real devices (this is the one thing I cannot do from
 inside the sandbox), then sections 03–10.
+
+---
+
+### S-07 — 2026-11-09 — Redesign: 2D, vibrant, alive
+
+**Feedback from Aditya:** the page looked terrible; drop the 3D/canvas artwork; deliver
+a strong 2D design with motion, a full footer, more content, real charts of
+communication skills, a light/dark switch, SVG graphics — "make it vibrant and joy
+giving, make it alive."
+
+**Decisions taken**
+- **D-043:** The canvas artwork is retired from the hero. Motion is now CSS + SVG only
+  (no canvas, no GSAP — dependency removed). Rationale: the artwork was the weakest
+  part of the page and carried the most cost; the page now moves through layout,
+  typography, marquees, chart animation and hover states instead.
+- **D-044:** Light theme added and made the default; dark retained as the cinematic
+  counterpart. Preference is stored and resolved before first paint (no flash).
+- **D-045:** Illustrative charts live in `lib/sample-data.ts` and are labelled as
+  sample data on every surface that renders them. No invented "live" numbers.
+- **D-046:** `/develop` (build in public · roadmap · changelog · method) and `/legal`
+  (privacy, guardians, terms, cookies, accessibility, security) were created so the
+  footer's links all resolve. Unbuilt features are marked "soon", never linked.
+- **D-047:** Added text-safe accent tokens (`--c-mint-text`, `--c-sun-text`,
+  `--c-flare-text`) so accent-coloured text clear AA on light surfaces.
+
+**Built**
+- Full landing page: Hero (+ rotating speak→score→feedback demo), marquee band,
+  Problem, HowItWorks, Worlds, SkillData (radar + bars + sparkline), Scorecard,
+  Vision, FinalCTA, Footer (4 link columns, logo, copyright, legal, back-to-top).
+- Hand-built SVG charts: `Radar`, `Bars`, `Sparkline` — no chart library, animated
+  on scroll via CSS only.
+- Theme system: tokens on `:root`/`[data-theme]`, mapped into Tailwind with
+  `@theme inline`, toggle in nav, OS-preference default, `localStorage` persistence.
+- `ScrollReveal`: one IntersectionObserver for the page, plus a 4 s visibility fallback.
+
+**Mistakes found and fixed**
+| # | Mistake | Fix |
+|---|---------|-----|
+| M-007 | The mobile menu was `position: fixed` **inside** a header carrying `backdrop-filter`. A backdrop filter creates a containing block, so the menu would have been trapped inside the 70 px header when scrolled. | Moved the panel out of `<header>` into a fragment sibling. |
+| M-008 | Chart bars used `h-full` inside an auto-height flex column — the track would collapse. | Track is now `flex-1` in a fixed-height row. |
+| M-009 | Radar axis labels at `1.19 × r` overflowed the viewBox and clipped. | Padding raised to 66, label radius to 1.13 × r. |
+| M-010 | The boot script ran in `<body>`, so a dark-preference visitor could see one light frame. | Moved into `<head>` before the document renders. |
+
+**Verified**
+- 6 routes, all `○ Static` · every internal link and anchor resolves · both theme token
+  sets present in the compiled CSS · utilities resolve to `var(--c-*)` · contrast
+  pass on accent text · reduced-motion path present.
+
+**Still open (unchanged):** Q-022 market/pricing, and visual QA on real devices —
+the sandbox still cannot run a browser (M-006).

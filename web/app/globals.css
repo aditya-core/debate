@@ -2,8 +2,6 @@
 
 /* ------------------------------------------------------------------
    Type — self-hosted, latin subset only.
-   22 KB display + 48 KB body. No third-party font request on the
-   critical path, no layout shift, no FOUT on a slow connection.
 ------------------------------------------------------------------- */
 @font-face {
   font-family: "Space Grotesk Variable";
@@ -28,366 +26,538 @@
     U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
-/* ------------------------------------------------------------------
-   Gift of Words — design tokens
-   Dark charcoal foundation, vibrant accents. "If everything glows,
-   nothing glows" — saturation is used sparingly and deliberately.
-------------------------------------------------------------------- */
-@theme {
-  --color-ink: #10111d;
-  --color-ink-2: #191a2b;
-  --color-brand: #7945e8;
-  --color-sky: #258bff;
-  --color-flare: #e34fbf;
-  --color-aqua: #53d8e8;
-  --color-paper: #f8f8fc;
+/* ==================================================================
+   COLOUR SYSTEM
+   Two complete themes. Light is the default: warm paper, saturated
+   ink, high-chroma accents. Dark is the cinematic counterpart.
+   Tokens live on :root / [data-theme] and are mapped into Tailwind
+   with @theme inline, so every utility follows the theme.
+================================================================== */
+:root {
+  color-scheme: light;
+
+  --c-canvas: #f6f1e9;
+  --c-surface: #ffffff;
+  --c-surface-2: #fbf8f3;
+  --c-fg: #16121f;
+  --c-muted: #6a6379;
+  --c-faint: #938da0;
+  --c-line: rgba(22, 18, 31, 0.11);
+  --c-line-strong: rgba(22, 18, 31, 0.2);
+
+  --c-brand: #5b2bf5;
+  --c-brand-soft: #ede7ff;
+  --c-sky: #1170ff;
+  --c-flare: #ff3d8b;
+  --c-flare-soft: #ffe4ee;
+  --c-sun: #f5a300;
+  --c-mint: #00b98a;
+  --c-aqua: #00bcd4;
+
+  /* Text-safe versions of the accents (≥4.5:1 on the light canvas). */
+  --c-mint-text: #07795a;
+  --c-sun-text: #8f5a00;
+  --c-flare-text: #cc1256;
+
+  --shadow-card: 0 1px 2px rgba(22, 18, 31, 0.04),
+    0 12px 30px -12px rgba(22, 18, 31, 0.18);
+  --shadow-lift: 0 2px 4px rgba(22, 18, 31, 0.05),
+    0 26px 50px -18px rgba(22, 18, 31, 0.28);
+
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --c-canvas: #08070f;
+  --c-surface: #121021;
+  --c-surface-2: #100e1c;
+  --c-fg: #f6f1e9;
+  --c-muted: #a09ab3;
+  --c-faint: #7d7790;
+  --c-line: rgba(255, 255, 255, 0.11);
+  --c-line-strong: rgba(255, 255, 255, 0.2);
+
+  --c-brand: #8b5cf6;
+  --c-brand-soft: #1d1739;
+  --c-sky: #3b93ff;
+  --c-flare: #ff5c9d;
+  --c-flare-soft: #2a1220;
+  --c-sun: #fbbf24;
+  --c-mint: #34d399;
+  --c-aqua: #22d3ee;
+
+  --c-mint-text: #34d399;
+  --c-sun-text: #fbbf24;
+  --c-flare-text: #ff7ab0;
+
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4),
+    0 16px 40px -16px rgba(0, 0, 0, 0.7);
+  --shadow-lift: 0 2px 6px rgba(0, 0, 0, 0.5),
+    0 30px 60px -20px rgba(0, 0, 0, 0.8);
+}
+
+@theme inline {
+  --color-canvas: var(--c-canvas);
+  --color-surface: var(--c-surface);
+  --color-surface-2: var(--c-surface-2);
+  --color-fg: var(--c-fg);
+  --color-muted: var(--c-muted);
+  --color-faint: var(--c-faint);
+  --color-line: var(--c-line);
+  --color-brand: var(--c-brand);
+  --color-brand-soft: var(--c-brand-soft);
+  --color-sky: var(--c-sky);
+  --color-flare: var(--c-flare);
+  --color-flare-soft: var(--c-flare-soft);
+  --color-sun: var(--c-sun);
+  --color-mint: var(--c-mint);
+  --color-aqua: var(--c-aqua);
+  --color-mint-text: var(--c-mint-text);
+  --color-sun-text: var(--c-sun-text);
+  --color-flare-text: var(--c-flare-text);
 
   --font-display: "Space Grotesk Variable", ui-sans-serif, system-ui, sans-serif;
   --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
-
-  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+/* ==================================================================
+   BASE
+================================================================== */
 @layer base {
   html {
-    background-color: var(--color-ink);
-    color: var(--color-paper);
+    background-color: var(--c-canvas);
+    scroll-behavior: smooth;
     -webkit-text-size-adjust: 100%;
   }
 
   body {
+    background-color: var(--c-canvas);
+    color: var(--c-fg);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
     overflow-x: hidden;
+    transition:
+      background-color 0.5s var(--ease),
+      color 0.5s var(--ease);
   }
 
   ::selection {
-    background: color-mix(in oklab, var(--color-brand) 55%, transparent);
+    background: var(--c-brand);
     color: #fff;
   }
 
   :focus-visible {
-    outline: 2px solid var(--color-aqua);
+    outline: 2px solid var(--c-brand);
     outline-offset: 3px;
-    border-radius: 2px;
-  }
-
-  /* Tabular numerals wherever scores will live later. */
-  .tnum {
-    font-variant-numeric: tabular-nums;
+    border-radius: 4px;
   }
 }
 
-/* ------------------------------------------------------------------
-   Reveal choreography
-   Content is visible by default. The inline script in layout.tsx sets
-   data-js="1" before first paint, so only JS-capable clients get the
-   pre-animation hidden state. No flash, no invisible page without JS.
-------------------------------------------------------------------- */
-html[data-js="1"] .js-reveal {
-  opacity: 0;
-  will-change: opacity, transform;
+/* ==================================================================
+   LAYOUT PRIMITIVES
+================================================================== */
+.shell {
+  width: 100%;
+  max-width: 1200px;
+  margin-inline: auto;
+  padding-inline: 1.25rem;
 }
 
-html[data-js="1"] .js-mask .js-mask-inner {
-  transform: translate3d(0, 110%, 0);
-  will-change: transform;
-}
-
-/* Safety net: if the motion layer ever fails to run (hydration error,
-   blocked script, extreme device), the page must still be readable.
-   Applied by an inline timer in layout.tsx, well after the entrance ends. */
-html.reveal-fallback .js-reveal {
-  opacity: 1 !important;
-  transform: none !important;
-}
-
-html.reveal-fallback .js-mask .js-mask-inner {
-  transform: none !important;
-}
-
-.js-mask {
-  display: block;
-  overflow: hidden;
-  padding-bottom: 0.06em;
-  margin-bottom: -0.06em;
-}
-
-/* Full-viewport shell.
-   100vh is wrong on mobile browsers with collapsing toolbars; svh fixes it
-   but older Android WebViews don't know it. Base wins where svh fails. */
-.hero-shell {
-  min-height: 100vh;
-}
-
-@supports (height: 100svh) {
-  .hero-shell {
-    min-height: 100svh;
+@media (min-width: 640px) {
+  .shell {
+    padding-inline: 2rem;
   }
 }
 
-/* ------------------------------------------------------------------
-   Type / treatments
-------------------------------------------------------------------- */
-.gradient-text {
+@media (min-width: 1024px) {
+  .shell {
+    padding-inline: 2.5rem;
+  }
+}
+
+.section {
+  padding-block: clamp(4rem, 9vw, 7.5rem);
+}
+
+/* ==================================================================
+   COMPONENTS
+================================================================== */
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-family: var(--font-display);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--c-muted);
+}
+
+.eyebrow::before {
+  content: "";
+  width: 1.5rem;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.5;
+}
+
+.card {
+  background: var(--c-surface);
+  border: 1px solid var(--c-line);
+  border-radius: 22px;
+  box-shadow: var(--shadow-card);
+}
+
+.card-hover {
+  transition:
+    transform 0.5s var(--ease),
+    box-shadow 0.5s var(--ease),
+    border-color 0.5s var(--ease);
+}
+
+.card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lift);
+  border-color: var(--c-line-strong);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card-hover:hover {
+    transform: none;
+  }
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.85rem;
+  border-radius: 999px;
+  border: 1px solid var(--c-line);
+  background: var(--c-surface);
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--c-muted);
+}
+
+.pill-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--c-mint);
+  box-shadow: 0 0 0 0 color-mix(in oklab, var(--c-mint) 60%, transparent);
+  animation: ping 2.4s var(--ease) infinite;
+}
+
+@keyframes ping {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in oklab, var(--c-mint) 55%, transparent);
+  }
+  70%,
+  100% {
+    box-shadow: 0 0 0 9px transparent;
+  }
+}
+
+/* --- buttons ---------------------------------------------------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  height: 3rem;
+  padding-inline: 1.5rem;
+  border-radius: 999px;
+  font-family: var(--font-display);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  white-space: nowrap;
+  transition:
+    transform 0.45s var(--ease),
+    box-shadow 0.45s var(--ease),
+    background-color 0.3s ease,
+    border-color 0.3s ease,
+    color 0.3s ease;
+}
+
+.btn-primary {
+  color: #fff;
   background-image: linear-gradient(
     100deg,
-    #f8f8fc 0%,
-    #d9ccff 22%,
-    #a07bff 44%,
-    #7945e8 60%,
-    #258bff 82%,
-    #53d8e8 100%
+    var(--c-brand) 0%,
+    #7b4dff 45%,
+    var(--c-sky) 100%
+  );
+  box-shadow: 0 10px 26px -10px color-mix(in oklab, var(--c-brand) 75%, transparent);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 18px 40px -12px color-mix(in oklab, var(--c-brand) 85%, transparent);
+}
+
+.btn-outline {
+  border: 1px solid var(--c-line-strong);
+  color: var(--c-fg);
+  background: transparent;
+}
+
+.btn-outline:hover {
+  border-color: var(--c-fg);
+  background: color-mix(in oklab, var(--c-fg) 5%, transparent);
+  transform: translateY(-2px);
+}
+
+.btn-sm {
+  height: 2.5rem;
+  padding-inline: 1.15rem;
+  font-size: 0.85rem;
+}
+
+/* --- theme toggle ------------------------------------------------ */
+.theme-toggle {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  width: 3.5rem;
+  height: 1.9rem;
+  border-radius: 999px;
+  border: 1px solid var(--c-line);
+  background: var(--c-surface-2);
+  transition: background-color 0.4s var(--ease);
+}
+
+.theme-toggle-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  display: grid;
+  place-items: center;
+  width: 1.55rem;
+  height: 1.55rem;
+  border-radius: 999px;
+  background: var(--c-surface);
+  box-shadow: var(--shadow-card);
+  color: var(--c-fg);
+  transition: transform 0.5s var(--ease);
+}
+
+[data-theme="dark"] .theme-toggle-knob {
+  transform: translateX(1.6rem);
+}
+
+/* --- reveal ------------------------------------------------------ */
+.reveal {
+  opacity: 0;
+  transform: translateY(20px);
+  transition:
+    opacity 0.9s var(--ease),
+    transform 0.9s var(--ease);
+  transition-delay: var(--d, 0ms);
+}
+
+.reveal.is-in {
+  opacity: 1;
+  transform: none;
+}
+
+html:not([data-js]) .reveal {
+  opacity: 1;
+  transform: none;
+}
+
+/* --- marquee ----------------------------------------------------- */
+.marquee {
+  display: flex;
+  overflow: hidden;
+  user-select: none;
+  gap: 0;
+  mask-image: linear-gradient(
+    90deg,
+    transparent,
+    #000 6%,
+    #000 94%,
+    transparent
+  );
+}
+
+.marquee-track {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 2.5rem;
+  padding-right: 2.5rem;
+  min-width: 100%;
+  animation: marquee-scroll 32s linear infinite;
+}
+
+.marquee:hover .marquee-track {
+  animation-play-state: paused;
+}
+
+@keyframes marquee-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-100%);
+  }
+}
+
+/* --- decorative -------------------------------------------------- */
+.grid-bg {
+  background-image: radial-gradient(
+    circle at 1px 1px,
+    var(--c-line-strong) 1px,
+    transparent 0
+  );
+  background-size: 26px 26px;
+  opacity: 0.5;
+}
+
+.orb {
+  position: absolute;
+  border-radius: 999px;
+  filter: blur(60px);
+  pointer-events: none;
+  opacity: 0.55;
+}
+
+[data-theme="dark"] .orb {
+  opacity: 0.4;
+  filter: blur(80px);
+}
+
+.text-gradient {
+  background-image: linear-gradient(
+    100deg,
+    var(--c-brand) 0%,
+    #7b4dff 30%,
+    var(--c-sky) 62%,
+    var(--c-aqua) 100%
   );
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
 
-.text-balance {
-  text-wrap: balance;
+.text-gradient-warm {
+  background-image: linear-gradient(
+    100deg,
+    var(--c-flare) 0%,
+    #ff7a45 55%,
+    var(--c-sun) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
-.eyebrow {
-  font-family: var(--font-display);
-  font-size: 0.6875rem;
-  font-weight: 500;
-  letter-spacing: 0.32em;
-  text-transform: uppercase;
-  color: color-mix(in oklab, var(--color-aqua) 72%, var(--color-paper) 28%);
+/* --- chart animation --------------------------------------------- */
+.bar-fill {
+  transform-origin: bottom;
+  transform: scaleY(0.02);
+  transition: transform 1.1s var(--ease);
+  transition-delay: var(--d, 120ms);
 }
 
-/* Film grain — the difference between "designed" and "rendered". */
-.grain-layer {
-  position: fixed;
-  inset: 0;
-  z-index: 50;
-  pointer-events: none;
-  opacity: 0.05;
-  mix-blend-mode: overlay;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
+.is-in .bar-fill,
+html:not([data-js]) .bar-fill {
+  transform: scaleY(1);
 }
 
-/* ------------------------------------------------------------------
-   Buttons
-------------------------------------------------------------------- */
-.btn-primary {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.6rem;
-  padding: 0.95rem 1.6rem;
-  border-radius: 999px;
-  font-family: var(--font-display);
-  font-size: 0.9375rem;
-  font-weight: 500;
-  letter-spacing: 0.01em;
-  color: #fff;
-  background-image: linear-gradient(100deg, #7945e8 0%, #5a5cff 45%, #258bff 100%);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.28),
-    0 10px 40px -12px rgba(121, 69, 232, 0.85);
+.radar-shape {
+  transform-origin: center;
+  transform: scale(0.1) rotate(-14deg);
+  opacity: 0;
   transition:
-    transform 0.45s var(--ease-out-expo),
-    box-shadow 0.45s var(--ease-out-expo),
-    filter 0.3s ease;
+    transform 1.2s var(--ease),
+    opacity 0.8s ease;
 }
 
-.btn-primary:hover {
-  transform: translateY(-2px);
-  filter: brightness(1.06);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.32),
-    0 18px 60px -14px rgba(121, 69, 232, 0.95);
+.is-in .radar-shape,
+html:not([data-js]) .radar-shape {
+  transform: none;
+  opacity: 1;
 }
 
-.btn-primary:active {
-  transform: translateY(0);
+.spark-line {
+  stroke-dasharray: 620;
+  stroke-dashoffset: 620;
+  transition: stroke-dashoffset 1.8s var(--ease);
 }
 
-.btn-ghost {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.55rem;
-  padding: 0.95rem 0.35rem;
-  font-family: var(--font-display);
-  font-size: 0.9375rem;
-  font-weight: 400;
-  color: rgba(248, 248, 252, 0.68);
-  transition: color 0.35s ease;
+.is-in .spark-line,
+html:not([data-js]) .spark-line {
+  stroke-dashoffset: 0;
 }
 
-.btn-ghost:hover {
-  color: #fff;
+/* --- live demo --------------------------------------------------- */
+.demo-panel {
+  animation: demo-in 0.7s var(--ease) both;
 }
 
-.btn-ghost .arrow {
-  transition: transform 0.45s var(--ease-out-expo);
+@keyframes demo-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
-.btn-ghost:hover .arrow {
-  transform: translateY(3px);
+/* --- equalizer --------------------------------------------------- */
+@keyframes eq {
+  0%,
+  100% {
+    transform: scaleY(0.28);
+  }
+  50% {
+    transform: scaleY(1);
+  }
 }
 
-/* Nav CTA — quieter than the hero's primary action. */
-.btn-nav {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.55rem 1.05rem;
-  border-radius: 999px;
-  border: 1px solid rgba(248, 248, 252, 0.16);
-  background-color: rgba(248, 248, 252, 0.04);
-  font-family: var(--font-display);
-  font-size: 0.8125rem;
-  font-weight: 500;
-  color: rgba(248, 248, 252, 0.92);
-  transition:
-    border-color 0.4s ease,
-    background-color 0.4s ease,
-    box-shadow 0.4s ease;
+.eq-bar {
+  transform-origin: center;
+  animation: eq 1.1s ease-in-out infinite;
 }
 
-.btn-nav:hover {
-  border-color: rgba(121, 69, 232, 0.75);
-  background-color: rgba(121, 69, 232, 0.16);
-  box-shadow: 0 0 30px -8px rgba(121, 69, 232, 0.9);
-}
-
-/* Animated nav underline. */
-.nav-link {
+/* --- misc -------------------------------------------------------- */
+.link-underline {
   position: relative;
-  font-size: 0.875rem;
-  color: rgba(248, 248, 252, 0.62);
-  transition: color 0.35s ease;
+  transition: color 0.3s ease;
 }
 
-.nav-link::after {
+.link-underline::after {
   content: "";
   position: absolute;
   left: 0;
-  bottom: -6px;
+  bottom: -3px;
   height: 1px;
   width: 100%;
   transform: scaleX(0);
   transform-origin: left;
-  background-image: linear-gradient(90deg, #7945e8, #53d8e8);
-  transition: transform 0.5s var(--ease-out-expo);
+  background: currentColor;
+  transition: transform 0.45s var(--ease);
 }
 
-.nav-link:hover {
-  color: #f8f8fc;
-}
-
-.nav-link:hover::after {
+.link-underline:hover::after {
   transform: scaleX(1);
 }
 
-/* ------------------------------------------------------------------
-   THINK · EXPRESS · IMPACT — a slow, deliberate pulse.
-------------------------------------------------------------------- */
-@keyframes stage-pulse {
-  0%,
-  72%,
-  100% {
-    opacity: 0.32;
-    text-shadow: none;
-  }
-  18%,
-  42% {
-    opacity: 1;
-    text-shadow: 0 0 22px rgba(83, 216, 232, 0.55);
-  }
+.tnum {
+  font-variant-numeric: tabular-nums;
 }
 
-.stage-word {
-  animation: stage-pulse 9s var(--ease-out-expo) infinite;
-}
-
-.stage-word:nth-child(1) {
-  animation-delay: 0s;
-}
-.stage-word:nth-child(3) {
-  animation-delay: 3s;
-}
-.stage-word:nth-child(5) {
-  animation-delay: 6s;
-}
-
-/* Scroll cue */
-@keyframes cue-travel {
-  0% {
-    transform: translateY(-100%);
-    opacity: 0;
-  }
-  35% {
-    opacity: 1;
-  }
-  100% {
-    transform: translateY(100%);
-    opacity: 0;
-  }
-}
-
-.scroll-cue-line {
-  position: relative;
-  overflow: hidden;
-  width: 1px;
-  height: 42px;
-  background-color: rgba(248, 248, 252, 0.12);
-}
-
-.scroll-cue-line::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-image: linear-gradient(180deg, transparent, #53d8e8, transparent);
-  animation: cue-travel 2.6s ease-in-out infinite;
-}
-
-/* ------------------------------------------------------------------
-   World cards
-------------------------------------------------------------------- */
-.world-card {
-  position: relative;
-  overflow: hidden;
-  border: 1px solid rgba(248, 248, 252, 0.08);
-  border-radius: 20px;
-  background-color: color-mix(in oklab, var(--color-ink-2) 82%, transparent);
-  transition:
-    border-color 0.6s var(--ease-out-expo),
-    transform 0.6s var(--ease-out-expo),
-    background-color 0.6s var(--ease-out-expo);
-}
-
-.world-card:hover {
-  transform: translateY(-4px);
-  border-color: rgba(121, 69, 232, 0.42);
-  background-color: color-mix(in oklab, var(--color-ink-2) 94%, transparent);
-}
-
-.world-card::before {
-  content: "";
-  position: absolute;
-  inset: -1px;
-  border-radius: inherit;
-  opacity: 0;
-  background: radial-gradient(
-    420px circle at var(--mx, 50%) var(--my, 0%),
-    rgba(121, 69, 232, 0.22),
-    transparent 65%
-  );
-  transition: opacity 0.6s ease;
-  pointer-events: none;
-}
-
-.world-card:hover::before {
-  opacity: 1;
-}
-
-/* ------------------------------------------------------------------
-   Accessibility: motion is optional.
-------------------------------------------------------------------- */
+/* ==================================================================
+   ACCESSIBILITY
+================================================================== */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -398,19 +568,14 @@ html.reveal-fallback .js-mask .js-mask-inner {
     scroll-behavior: auto !important;
   }
 
-  html[data-js="1"] .js-reveal,
-  html[data-js="1"] .js-mask .js-mask-inner {
+  .reveal {
     opacity: 1;
     transform: none;
   }
-
-  .stage-word {
-    opacity: 0.85;
-  }
 }
 
-@media (prefers-reduced-transparency: reduce) {
-  .btn-nav {
-    background-color: var(--color-ink-2);
-  }
+/* Guaranteed-visible fallback if the reveal observer never runs. */
+html.reveal-fallback .reveal {
+  opacity: 1 !important;
+  transform: none !important;
 }
