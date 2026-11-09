@@ -5,7 +5,12 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/env";
-import { ADULT_AGE, MIN_AGE, ageFrom } from "@/lib/auth/validation";
+import {
+  ADULT_AGE,
+  MIN_AGE,
+  ageFrom,
+  passwordsMatch,
+} from "@/lib/auth/validation";
 
 export type AuthState = {
   status: "idle" | "error" | "success";
@@ -35,6 +40,7 @@ const signUpSchema = z
       .min(10, "Use at least 10 characters.")
       .regex(/[A-Za-z]/, "Include at least one letter.")
       .regex(/[0-9]/, "Include at least one number."),
+    confirmPassword: z.string().min(1, "Type your password once more."),
     dateOfBirth: z
       .string()
       .regex(/^\d{4}-\d{2}-\d{2}$/, "Please enter your date of birth."),
@@ -44,6 +50,14 @@ const signUpSchema = z
     }),
   })
   .superRefine((value, ctx) => {
+    if (!passwordsMatch(value.password, value.confirmPassword)) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["confirmPassword"],
+        message: "Those passwords don't match.",
+      });
+    }
+
     const age = ageFrom(value.dateOfBirth);
     if (age === null) {
       ctx.addIssue({ code: "custom", path: ["dateOfBirth"], message: "That date isn't valid." });
@@ -101,6 +115,7 @@ export async function signUpAction(
     fullName: String(formData.get("fullName") ?? ""),
     email: String(formData.get("email") ?? ""),
     password: String(formData.get("password") ?? ""),
+    confirmPassword: String(formData.get("confirmPassword") ?? ""),
     dateOfBirth: String(formData.get("dateOfBirth") ?? ""),
     guardianEmail: String(formData.get("guardianEmail") ?? "") || undefined,
     acceptedTerms: String(formData.get("acceptedTerms") ?? ""),

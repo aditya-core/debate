@@ -3,18 +3,27 @@
 import Link from "next/link";
 import { useActionState, useMemo, useState } from "react";
 import { INITIAL_STATE, signUpAction } from "@/lib/auth/actions";
-import { ADULT_AGE, MIN_AGE, ageFrom, passwordScore } from "@/lib/auth/validation";
+import {
+  ADULT_AGE,
+  MIN_AGE,
+  ageFrom,
+  passwordScore,
+  passwordsMatch,
+} from "@/lib/auth/validation";
 
 export default function SignUpForm() {
   const [state, formAction, pending] = useActionState(signUpAction, INITIAL_STATE);
   const [dob, setDob] = useState("");
   const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
   const age = useMemo(() => ageFrom(dob), [dob]);
   const needsGuardian = age !== null && age < ADULT_AGE && age >= MIN_AGE;
   const tooYoung = age !== null && age < MIN_AGE;
   const strength = passwordScore(password);
+  // Only complain once they've started typing the confirmation.
+  const mismatch = confirm.length > 0 && !passwordsMatch(password, confirm);
   const errors = state.fieldErrors ?? {};
 
   return (
@@ -108,6 +117,18 @@ export default function SignUpForm() {
           <p className="mt-1.5 text-[0.78rem] text-flare-text">{errors.password}</p>
         ) : null}
       </div>
+
+      <Field
+        label="Confirm password"
+        name="confirmPassword"
+        type={showPassword ? "text" : "password"}
+        autoComplete="new-password"
+        placeholder="Type it again"
+        value={confirm}
+        onChange={(e) => setConfirm(e.target.value)}
+        error={mismatch ? "Those passwords don't match yet." : errors.confirmPassword}
+        required
+      />
 
       <div>
         <Field

@@ -13,6 +13,7 @@ import {
   MIN_AGE,
   ageFrom,
   passwordScore,
+  passwordsMatch,
 } from "../lib/auth/validation.ts";
 
 const NOW = new Date("2026-11-09T12:00:00Z");
@@ -72,4 +73,11 @@ test("password strength never exceeds its scale", () => {
     assert.equal(got.score, score, `score for ${JSON.stringify(pw)}`);
     assert.equal(got.label, label, `label for ${JSON.stringify(pw)}`);
   }
+});
+
+test("confirmation is exact equality, including whitespace", () => {
+  assert.equal(passwordsMatch("correct horse 9", "correct horse 9"), true);
+  assert.equal(passwordsMatch("correct horse 9", "correct horse 9 "), false);
+  assert.equal(passwordsMatch("correct horse 9", "Correct horse 9"), false);
+  assert.equal(passwordsMatch("", ""), true);
 });

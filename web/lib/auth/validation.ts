@@ -54,3 +54,11 @@ export function passwordScore(pw: string): PasswordStrength {
   if (/[0-9]/.test(pw) && /[^A-Za-z0-9]/.test(pw)) score++;
   return { score: score as PasswordStrength["score"], label: LABELS[score] };
 }
+
+/**
+ * Confirmation exists to catch typos, not to add a second rule — so the check
+ * is equality, and it is the same check on both sides of the wire.
+ */
+export function passwordsMatch(password: string, confirm: string): boolean {
+  return password === confirm;
+}

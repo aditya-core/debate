@@ -18,7 +18,7 @@ export default function AuthShell({
   footer?: React.ReactNode;
 }) {
   return (
-    <div className="relative isolate min-h-[calc(100vh-70px)] lg:grid lg:grid-cols-[1fr_1.05fr]">
+    <div className="relative isolate min-h-[100svh] lg:grid lg:grid-cols-[1fr_1.05fr]">
       {/* left: the idea */}
       <aside className="relative hidden overflow-hidden lg:block">
         <div
@@ -79,8 +79,8 @@ export default function AuthShell({
       </aside>
 
       {/* right: the form */}
-      <div className="flex items-center justify-center px-5 py-12 sm:px-8 lg:px-12">
-        <div className="w-full max-w-[430px]">
+      <div className="flex min-h-[100svh] flex-col justify-center px-5 py-14 sm:px-8 lg:px-12">
+        <div className="mx-auto w-full max-w-[430px]">
           <div className="lg:hidden">
             <Link href="/" className="mb-8 inline-flex items-center gap-2.5">
               <Mark size={24} />
@@ -101,6 +101,28 @@ export default function AuthShell({
 
           {footer ? <div className="mt-6">{footer}</div> : null}
         </div>
+
+        {/* Everything the marketing footer would have said, in one line. */}
+        <nav
+          aria-label="Legal"
+          className="mx-auto mt-12 flex w-full max-w-[430px] flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[0.72rem] text-faint"
+        >
+          <Link href="/legal#terms" className="link-underline transition-colors hover:text-fg">
+            Terms &amp; conditions
+          </Link>
+          <span aria-hidden="true" className="text-faint/40">
+            ·
+          </span>
+          <Link href="/legal#privacy" className="link-underline transition-colors hover:text-fg">
+            Privacy policy
+          </Link>
+          <span aria-hidden="true" className="text-faint/40">
+            ·
+          </span>
+          <Link href="/" className="link-underline transition-colors hover:text-fg">
+            giftofwords.app
+          </Link>
+        </nav>
       </div>
     </div>
   );

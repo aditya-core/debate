@@ -1,7 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
-import Nav from "@/components/Nav";
-import Footer from "@/components/Footer";
 import ScrollReveal from "@/components/ScrollReveal";
 
 export const metadata: Metadata = {
@@ -82,9 +80,7 @@ export default function RootLayout({
           Skip to content
         </a>
 
-        <Nav />
-        <main id="main">{children}</main>
-        <Footer />
+        {children}
         <ScrollReveal />
       </body>
     </html>

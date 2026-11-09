@@ -508,3 +508,56 @@ docs/SUPABASE-SETUP.md               thirty minutes, start to verified signup
 - Q-016 (email provider) still gates real signups: Supabase's built-in sender is
   2 messages/hour to organisation members only. Fine for testing his own address;
   unusable for anyone else.
+
+---
+
+### S-10 — 2026-11-09 — A form is a task: auth pages get their own shell
+
+**Aditya asked for two things:** a confirm-password field, and no full marketing
+footer on login and registration — just small links to the terms and the privacy
+policy.
+
+**D-058 — route groups instead of a conditional footer.** The footer was in the
+root layout, so "hide it on two pages" had no honest server-side answer: a client
+component checking `usePathname()` would ship the footer in the HTML and then
+flicker it away. The app is now split into `app/(site)/` (nav + footer) and
+`app/(auth)/` (no nav, no footer, one line of legal links), both under the same
+root layout. URLs are unchanged, `/` and the marketing pages keep their chrome,
+and the auth pages genuinely do not render the footer at all.
+
+Auth pages keep one piece of chrome: the theme toggle, floating top-right. A
+visitor who has chosen dark should not be thrown into a light form because we
+removed the nav.
+
+**The legal line** now sits at the foot of the form column — *Terms & conditions
+· Privacy policy · giftofwords.app* — and the `check-email` page gets it too,
+because somebody waiting on a confirmation link is still a data subject.
+
+**D-059 — confirm password is a second field and the same rule.** The client
+shows "Those passwords don't match yet" as soon as they start typing the second
+one, but the gate is server-side: the zod schema compares the two through
+`passwordsMatch()` in `lib/auth/validation.ts`, the same function the form calls.
+The confirmation value is never sent to Supabase — it exists to catch a typo, not
+to authenticate.
+
+**Verified** (production build, port 3000)
+
+- `tsc` clean · `npm test` **7/7** (new: confirmation is exact equality,
+  whitespace included) · build clean, 10 routes.
+- Style audit after removing nav and footer: `/` 317 · `/develop` 194 ·
+  `/legal` 145 · `/signup` **153** (was 209) · `/signin` **136** (was 195) ·
+  `/signup/check-email` **130** (was 185). The class counts dropping is the
+  evidence that the chrome is gone, not merely hidden.
+- Footer still present on `/`, `/develop`, `/legal`; absent on `/signup`,
+  `/signin`.
+- `/signup` markup contains `name="confirmPassword"`, the legal nav, and exactly
+  one theme toggle.
+- The guardian step on `check-email` renders only with `?guardian=1`.
+
+**Still not verified:** the interactive behaviour of the new field (the mismatch
+message appearing as you type) — no browser in this sandbox (M-006).
+
+**Note for later:** the account page still sits in the site group and therefore
+still carries the marketing footer. It is not wrong, but an authenticated app
+shell with its own nav is the right long-term answer, and that belongs with the
+arenas in Stage 5.

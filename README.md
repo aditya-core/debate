@@ -33,8 +33,10 @@ Without it, sign-up and sign-in say so explicitly instead of pretending.
 ```
 docs/        the thinking: product brief, architecture, decision journal
 web/         the Next.js application (deployed to Vercel)
-  app/         routes: /, /develop, /legal, /signup, /signin, /account,
-               /auth/callback, /auth/signout (+ design tokens)
+  app/
+    (site)/    /, /develop, /legal, /account — marketing nav + full footer
+    (auth)/    /signup, /signin — no nav, no footer, one line of legal links
+    auth/      /auth/callback, /auth/signout (URLs, not a route group)
   components/
     sections/  Hero, Marquee, Problem, HowItWorks, Worlds, SkillData,
                Scorecard, Vision, FinalCTA, LiveDemo
