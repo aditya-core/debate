@@ -1,0 +1,416 @@
+@import "tailwindcss";
+
+/* ------------------------------------------------------------------
+   Type — self-hosted, latin subset only.
+   22 KB display + 48 KB body. No third-party font request on the
+   critical path, no layout shift, no FOUT on a slow connection.
+------------------------------------------------------------------- */
+@font-face {
+  font-family: "Space Grotesk Variable";
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+  src: url("/fonts/space-grotesk-latin-wght-normal.woff2")
+    format("woff2-variations");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6,
+    U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122,
+    U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "Inter Variable";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("/fonts/inter-latin-wght-normal.woff2") format("woff2-variations");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6,
+    U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122,
+    U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* ------------------------------------------------------------------
+   Gift of Words — design tokens
+   Dark charcoal foundation, vibrant accents. "If everything glows,
+   nothing glows" — saturation is used sparingly and deliberately.
+------------------------------------------------------------------- */
+@theme {
+  --color-ink: #10111d;
+  --color-ink-2: #191a2b;
+  --color-brand: #7945e8;
+  --color-sky: #258bff;
+  --color-flare: #e34fbf;
+  --color-aqua: #53d8e8;
+  --color-paper: #f8f8fc;
+
+  --font-display: "Space Grotesk Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@layer base {
+  html {
+    background-color: var(--color-ink);
+    color: var(--color-paper);
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+
+  ::selection {
+    background: color-mix(in oklab, var(--color-brand) 55%, transparent);
+    color: #fff;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-aqua);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+
+  /* Tabular numerals wherever scores will live later. */
+  .tnum {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* ------------------------------------------------------------------
+   Reveal choreography
+   Content is visible by default. The inline script in layout.tsx sets
+   data-js="1" before first paint, so only JS-capable clients get the
+   pre-animation hidden state. No flash, no invisible page without JS.
+------------------------------------------------------------------- */
+html[data-js="1"] .js-reveal {
+  opacity: 0;
+  will-change: opacity, transform;
+}
+
+html[data-js="1"] .js-mask .js-mask-inner {
+  transform: translate3d(0, 110%, 0);
+  will-change: transform;
+}
+
+/* Safety net: if the motion layer ever fails to run (hydration error,
+   blocked script, extreme device), the page must still be readable.
+   Applied by an inline timer in layout.tsx, well after the entrance ends. */
+html.reveal-fallback .js-reveal {
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+html.reveal-fallback .js-mask .js-mask-inner {
+  transform: none !important;
+}
+
+.js-mask {
+  display: block;
+  overflow: hidden;
+  padding-bottom: 0.06em;
+  margin-bottom: -0.06em;
+}
+
+/* Full-viewport shell.
+   100vh is wrong on mobile browsers with collapsing toolbars; svh fixes it
+   but older Android WebViews don't know it. Base wins where svh fails. */
+.hero-shell {
+  min-height: 100vh;
+}
+
+@supports (height: 100svh) {
+  .hero-shell {
+    min-height: 100svh;
+  }
+}
+
+/* ------------------------------------------------------------------
+   Type / treatments
+------------------------------------------------------------------- */
+.gradient-text {
+  background-image: linear-gradient(
+    100deg,
+    #f8f8fc 0%,
+    #d9ccff 22%,
+    #a07bff 44%,
+    #7945e8 60%,
+    #258bff 82%,
+    #53d8e8 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.text-balance {
+  text-wrap: balance;
+}
+
+.eyebrow {
+  font-family: var(--font-display);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: color-mix(in oklab, var(--color-aqua) 72%, var(--color-paper) 28%);
+}
+
+/* Film grain — the difference between "designed" and "rendered". */
+.grain-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+  opacity: 0.05;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
+}
+
+/* ------------------------------------------------------------------
+   Buttons
+------------------------------------------------------------------- */
+.btn-primary {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.95rem 1.6rem;
+  border-radius: 999px;
+  font-family: var(--font-display);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: #fff;
+  background-image: linear-gradient(100deg, #7945e8 0%, #5a5cff 45%, #258bff 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    0 10px 40px -12px rgba(121, 69, 232, 0.85);
+  transition:
+    transform 0.45s var(--ease-out-expo),
+    box-shadow 0.45s var(--ease-out-expo),
+    filter 0.3s ease;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.06);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.32),
+    0 18px 60px -14px rgba(121, 69, 232, 0.95);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.95rem 0.35rem;
+  font-family: var(--font-display);
+  font-size: 0.9375rem;
+  font-weight: 400;
+  color: rgba(248, 248, 252, 0.68);
+  transition: color 0.35s ease;
+}
+
+.btn-ghost:hover {
+  color: #fff;
+}
+
+.btn-ghost .arrow {
+  transition: transform 0.45s var(--ease-out-expo);
+}
+
+.btn-ghost:hover .arrow {
+  transform: translateY(3px);
+}
+
+/* Nav CTA — quieter than the hero's primary action. */
+.btn-nav {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.55rem 1.05rem;
+  border-radius: 999px;
+  border: 1px solid rgba(248, 248, 252, 0.16);
+  background-color: rgba(248, 248, 252, 0.04);
+  font-family: var(--font-display);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: rgba(248, 248, 252, 0.92);
+  transition:
+    border-color 0.4s ease,
+    background-color 0.4s ease,
+    box-shadow 0.4s ease;
+}
+
+.btn-nav:hover {
+  border-color: rgba(121, 69, 232, 0.75);
+  background-color: rgba(121, 69, 232, 0.16);
+  box-shadow: 0 0 30px -8px rgba(121, 69, 232, 0.9);
+}
+
+/* Animated nav underline. */
+.nav-link {
+  position: relative;
+  font-size: 0.875rem;
+  color: rgba(248, 248, 252, 0.62);
+  transition: color 0.35s ease;
+}
+
+.nav-link::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -6px;
+  height: 1px;
+  width: 100%;
+  transform: scaleX(0);
+  transform-origin: left;
+  background-image: linear-gradient(90deg, #7945e8, #53d8e8);
+  transition: transform 0.5s var(--ease-out-expo);
+}
+
+.nav-link:hover {
+  color: #f8f8fc;
+}
+
+.nav-link:hover::after {
+  transform: scaleX(1);
+}
+
+/* ------------------------------------------------------------------
+   THINK · EXPRESS · IMPACT — a slow, deliberate pulse.
+------------------------------------------------------------------- */
+@keyframes stage-pulse {
+  0%,
+  72%,
+  100% {
+    opacity: 0.32;
+    text-shadow: none;
+  }
+  18%,
+  42% {
+    opacity: 1;
+    text-shadow: 0 0 22px rgba(83, 216, 232, 0.55);
+  }
+}
+
+.stage-word {
+  animation: stage-pulse 9s var(--ease-out-expo) infinite;
+}
+
+.stage-word:nth-child(1) {
+  animation-delay: 0s;
+}
+.stage-word:nth-child(3) {
+  animation-delay: 3s;
+}
+.stage-word:nth-child(5) {
+  animation-delay: 6s;
+}
+
+/* Scroll cue */
+@keyframes cue-travel {
+  0% {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  35% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+}
+
+.scroll-cue-line {
+  position: relative;
+  overflow: hidden;
+  width: 1px;
+  height: 42px;
+  background-color: rgba(248, 248, 252, 0.12);
+}
+
+.scroll-cue-line::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(180deg, transparent, #53d8e8, transparent);
+  animation: cue-travel 2.6s ease-in-out infinite;
+}
+
+/* ------------------------------------------------------------------
+   World cards
+------------------------------------------------------------------- */
+.world-card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(248, 248, 252, 0.08);
+  border-radius: 20px;
+  background-color: color-mix(in oklab, var(--color-ink-2) 82%, transparent);
+  transition:
+    border-color 0.6s var(--ease-out-expo),
+    transform 0.6s var(--ease-out-expo),
+    background-color 0.6s var(--ease-out-expo);
+}
+
+.world-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(121, 69, 232, 0.42);
+  background-color: color-mix(in oklab, var(--color-ink-2) 94%, transparent);
+}
+
+.world-card::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  opacity: 0;
+  background: radial-gradient(
+    420px circle at var(--mx, 50%) var(--my, 0%),
+    rgba(121, 69, 232, 0.22),
+    transparent 65%
+  );
+  transition: opacity 0.6s ease;
+  pointer-events: none;
+}
+
+.world-card:hover::before {
+  opacity: 1;
+}
+
+/* ------------------------------------------------------------------
+   Accessibility: motion is optional.
+------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  html[data-js="1"] .js-reveal,
+  html[data-js="1"] .js-mask .js-mask-inner {
+    opacity: 1;
+    transform: none;
+  }
+
+  .stage-word {
+    opacity: 0.85;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .btn-nav {
+    background-color: var(--color-ink-2);
+  }
+}

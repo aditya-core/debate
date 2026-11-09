@@ -1,0 +1,340 @@
+# Gift of Words — Project Journal
+
+**Owner:** Aditya
+**Agent:** Arena Agent Mode
+**Branch:** `arena/cd16e984-debate`
+**Repo:** `aditya-core/debate`
+**Journal opened:** 2026-11-09
+
+---
+
+## 0. Purpose & conventions
+
+This file is the **living record** of the project. It is deliberately kept out of `README.md`.
+
+It records:
+
+- every decision that comes up, no matter how small,
+- every question asked (by Aditya, by the designer, or by me) and how it was answered,
+- every mistake we make, how we found it, and how we fixed it,
+- every improvement and every change of direction,
+- the current state of the work at the end of each session.
+
+**Rules**
+
+1. **Append-only.** History is never rewritten. If a decision changes, we add a *new* entry that supersedes the old one and mark the old one `SUPERSEDED`.
+2. **Every entry gets an ID** so it can be referenced in commits, PRs and conversation: `D-` decision, `Q-` question, `M-` mistake/fix, `R-` risk, `S-` session.
+3. **Status values:** `PROPOSED` · `LOCKED` · `OPEN` · `SUPERSEDED` · `FIXED`.
+4. If something is ambiguous or half-decided, it goes in the **Open Questions** table — we do not silently assume.
+
+---
+
+## 1. Decision log
+
+| ID | Date | Decision | Source | Status |
+|----|------|----------|--------|--------|
+| D-001 | 2026-11-09 | All work happens on branch `arena/cd16e984-debate`; repo starts from an empty scaffold (only `README.md`). | Agent policy | LOCKED |
+| D-002 | 2026-11-09 | Project progress is recorded in `docs/PROJECT-JOURNAL.md`, separate from `README.md`. A distilled product understanding lives in `docs/PRODUCT-BRIEF.md`. | Aditya's instruction | LOCKED |
+| D-003 | 2026-11-09 | One parent identity (`GOW-USER-…`) with two independent sub-identities: Debate (`GOW-DEB-…`) and Extempore (`GOW-EXT-…`). Sub-profiles are **identifiers, not credentials** — access is always authorised through the parent account. | Aditya + designer chat | LOCKED (pending §7 refinements) |
+| D-004 | 2026-11-09 | Both sub-profiles are created **automatically at registration**, even if the student has not entered either world yet. | Designer recommendation, accepted by Aditya | LOCKED |
+| D-005 | 2026-11-09 | Both worlds keep **fully independent** ratings, XP, history and reports. A shared "intelligence layer" may *read across* both but must never blend competitive scores. | Designer chat | LOCKED |
+| D-006 | 2026-11-09 | Build order is **not** "all backend first" and **not** "landing page first". Order: product blueprint → design system → landing page → auth/identity → onboarding → dashboards → AI layer → test/launch. | Answer to Q-001 | LOCKED |
+| D-007 | 2026-11-09 | Brand personality: **hybrid of cinematic + intellectual**. | Aditya | LOCKED |
+| D-008 | 2026-11-09 | Colour direction: **vibrant, dark foundation** (charcoal base; violet, electric blue, magenta, cyan accents). | Aditya | LOCKED |
+| D-009 | 2026-11-09 | Motion ambition: **immersive**. Guiding principle: every animation must communicate, create emotion or guide attention — never animation for its own sake. | Aditya | LOCKED |
+| D-010 | 2026-11-09 | Landing page audience: **everyone** (students, applicants, young professionals), not students-only and not parents-first. Positioning is "communication is a superpower", not "English learning app". | Aditya | LOCKED |
+| D-011 | 2026-11-09 | Hero headline: **"Unlock the power of your words."** (chosen from three options; the "potential" direction). | Aditya | LOCKED |
+| D-012 | 2026-11-09 | Hero signature visual: **hybrid** — kinetic typography + colourful 3D ribbons/particles. | Aditya | LOCKED |
+| D-013 | 2026-11-09 | Hero is **full-screen cinematic** (≈ one viewport). | Aditya | LOCKED |
+| D-014 | 2026-11-09 | Landing page blueprint is 10 sections: Nav → Hero → Problem → Two Worlds → AI Coach → Growth Journey → Product Showcase → Bigger Vision (coming soon) → Final CTA → Footer. | Designer chat | PROPOSED |
+| D-015 | 2026-11-09 | Hero must ship with reduced-motion support, a no-WebGL static fallback, and headline/CTA visible before the 3D scene finishes loading. | Designer chat (technical brief) | LOCKED |
+| D-016 | 2026-11-09 | Stack direction for the hero: Next.js + TypeScript + Tailwind + GSAP + Three.js/React Three Fiber; fonts self-hosted. | Designer chat (technical brief) | PROPOSED |
+| D-017 | 2026-11-09 | Hero scope is restricted: build hero + its nav integration only. No dashboard, auth or AI backend in that task. | Designer chat (handoff brief) | PROPOSED |
+| D-018 | 2026-11-09 | **Backend is Django** (DRF). Aditya's call. Good fit for domain logic, admin, migrations, Python AI orchestration. | Aditya | LOCKED |
+| D-019 | 2026-11-09 | **Supabase Auth is the identity provider.** Django does not store passwords; it verifies Supabase JWTs via JWKS and maps `sub` → `Account.supabase_uid`. | Aditya | LOCKED |
+| D-020 | 2026-11-09 | **Hosting is split:** Vercel for Next.js only; Django + Celery on a container platform (Railway / Render / Fly). Django on Vercel is rejected as an architectural fit (see R-009). | Agent recommendation | PROPOSED — needs sign-off |
+| D-021 | 2026-11-09 | **Motion graphics are non-negotiable.** Performance is solved by device tiering and pre-rendered fallbacks, not by removing motion. | Aditya | LOCKED |
+| D-022 | 2026-11-09 | **Desktop-first build, mobile as a first-class target** — validated on ₹15k-class Android, not just a dev laptop. | Aditya | LOCKED |
+| D-023 | 2026-11-09 | **Legal compliance is a product requirement, not paperwork.** Age gate, verifiable parental consent (under-18), recording consent, and erasure cascade must exist in schema v1. | Aditya ("keep legal compliance clear") | LOCKED |
+| D-024 | 2026-11-09 | **Speech evaluation deferred.** But a `Scorer` interface, async pipeline and rubric/model versioning are built now so the vendor is swappable. | Aditya | LOCKED |
+| D-025 | 2026-11-09 | Datastore is **Supabase Postgres** (implied by Supabase adoption), project region Mumbai `ap-south-1`. | Aditya (implied) | PROPOSED — confirm |
+| D-026 | 2026-11-09 | Stack decisions are documented in `docs/ARCHITECTURE.md`; this journal stays chronological. | Agent | LOCKED |
+| D-027 | 2026-11-09 | **Budget is ₹0 for now.** Phase 0 stack = **Next.js + Supabase only**. Django deferred to Phase 1/2, reintroduced only when a concrete need exists. | Agent recommendation (from Aditya's constraint) | PROPOSED — Aditya to sign off |
+| D-028 | 2026-11-09 | **No background queue in Phase 0.** AI evaluation runs inside the request; a queue is added when a measured problem appears, not preemptively. | Agent | PROPOSED |
+| D-029 | 2026-11-09 | Free-tier limits are accepted, each with a named upgrade trigger (`ARCHITECTURE.md` §11.5) rather than an open-ended "we'll pay when we need to". | Agent | LOCKED |
+| D-030 | 2026-11-09 | If Django is kept in Phase 0, it runs on an **Oracle Cloud Always Free ARM VM** (Docker Compose), never on Render free (no free workers, 15-min sleep, 512 MB). | Agent | PROPOSED |
+| D-031 | 2026-11-09 | **Stack confirmed: keep Next.js + Vercel + Supabase.** Target = launch-ready for **100 users at ₹0/month**. Capacity budget and four launch conditions in `ARCHITECTURE.md` §12. | Aditya + Agent | LOCKED |
+| D-032 | 2026-11-09 | **Four non-negotiable launch conditions:** (1) custom SMTP from day one, (2) delete raw audio after scoring, (3) landing page static/ISR, (4) uptime pinger + weekly `pg_dump`. | Agent | LOCKED |
+| D-033 | 2026-11-09 | Upgrade triggers are explicit, not vibes: first payment → Vercel Pro ($20); storage pressure or pause risk → Supabase Pro ($25). | Agent | LOCKED |
+| D-034 | 2026-11-09 | **Precedence rule:** the Nov 7 AI-Mode conversation is *context only*. Where it conflicts with a decision taken in this journal, this journal wins. Recorded as `PRODUCT-BRIEF.md` §9. | Aditya | LOCKED |
+| D-035 | 2026-11-09 | **The moat is cross-cutting weakness detection**, not AI feedback. Both design conversations arrived at it independently (Personal Weakness Engine ≈ shared intelligence layer). Product strategy anchors here. | Both conversations | LOCKED |
+| D-036 | 2026-11-09 | **Speech Vitals is a cross-cutting measurement layer, not a third world.** It attaches to Debate and Extempore sessions alike; it does not get its own `GOW-*` identity. | Agent | PROPOSED |
+| D-037 | 2026-11-09 | **Human community, matchmaking and tournaments stay post-launch** — re-affirmed against the older "must ship" list. Rationale: a 20-user matchmaking pool has nothing to match. | Agent | LOCKED |
+| D-038 | 2026-11-09 | **No prices are published until demand is validated.** Pricing has moved $65 → $59 → $14.99 → $9.99 across two conversations; publishing now would anchor us to a guess. | Agent | PROPOSED |
+
+---
+
+## 2. Question log
+
+> Both directions are recorded: questions Aditya/design asked, and questions the agent asked.
+
+| ID | Date | From → To | Question | Answer / Status |
+|----|------|-----------|----------|-----------------|
+| Q-001 | 2026-11-09 | Aditya → designer | "If I ask my AI agent to start working, what should it build first — all the backend logic, or the landing page and signup, integrating logic later?" | Answered: neither extreme. Blueprint → design system → landing page (first visible milestone) → identity backend → onboarding → dashboards → AI → launch. → became D-006. **CLOSED** |
+| Q-002 | 2026-11-09 | designer → Aditya | Should both sub-profiles be created automatically at registration? | Aditya's structure accepted; auto-create chosen. → D-004. **CLOSED** |
+| Q-003 | 2026-11-09 | designer → Aditya | What brand personality? | Hybrid cinematic + intellectual. → D-007. **CLOSED** |
+| Q-004 | 2026-11-09 | designer → Aditya | Which colour direction? | Vibrant / dark. → D-008. **CLOSED** |
+| Q-005 | 2026-11-09 | designer → Aditya | How ambitious should the motion be? | Immersive. → D-009. **CLOSED** |
+| Q-006 | 2026-11-09 | designer → Aditya | Who is the landing page speaking to? | "Everyone." → D-010. **CLOSED** (note: earlier recommendation was students-first; Aditya overrode it — see D-010, and R-007) |
+| Q-007 | 2026-11-09 | designer → Aditya | Lock headline / signature visual / hero height? | Unlock the power of your words / hybrid / full-screen. → D-011..D-013. **CLOSED** |
+| Q-008 | 2026-11-09 | Agent → Aditya | Which database, and which auth system, are we committing to? Stack names Next.js/Tailwind/GSAP/R3F/Gemini but no datastore, no auth provider, no hosting. | **OPEN** — blocks Stage 4 and any schema work |
+| Q-009 | 2026-11-09 | Agent → Aditya | Are the `GOW-*` IDs meant to be shown to users (public/pretty) or only internal? Sequential numbers are guessable and invite enumeration/IDOR. | **OPEN** — see R-001 |
+| Q-010 | 2026-11-09 | Agent → Aditya | Do we scaffold the Next.js app now (so the hero brief can be executed), or finish the written blueprint for sections 03–10 first? | **OPEN** |
+| Q-011 | 2026-11-09 | Agent → Aditya | Voice recording is central to practice. Are students/minors involved, and where (India / global)? This drives consent + data-retention design. | **ANSWERED (partial):** India-first; teenagers in scope → parental consent required (D-023). Global scope still open. |
+| Q-012 | 2026-11-09 | Aditya → Agent | "Use Supabase for auth, we are using Django — is that enough?" | Answered: individually good, one structural flaw (Django cannot live on Vercel) + ~12 missing pieces. See `ARCHITECTURE.md` §2, §9. **CLOSED** (recommendation pending on D-020) |
+| Q-013 | 2026-11-09 | Agent → Aditya | Do we keep Django (hosted on Railway) or drop it for pure Next.js + Supabase? | **OPEN** — `ARCHITECTURE.md` §10 item A |
+| Q-014 | 2026-11-09 | Agent → Aditya | Supabase region: Mumbai `ap-south-1` (recommended) vs Singapore? | **OPEN** — cheap now, painful later |
+| Q-015 | 2026-11-09 | Agent → Aditya | `GOW-*` IDs: sequential or random + checksum? | **OPEN** — R-001 |
+| Q-016 | 2026-11-09 | Agent → Aditya | Email provider for verification + parent consent mail? (Supabase's default sender will land in spam.) | **OPEN** |
+| Q-017 | 2026-11-09 | Aditya → Agent | "I can't spend right now — can I host Django for free? If I use Next.js, is Vercel + Supabase enough to launch? Which stack is best?" | Answered in `ARCHITECTURE.md` §11. Short version: Vercel + Supabase **is** enough to launch; free Django means a self-managed Oracle VM; Django + Celery on free PaaS does not work. **CLOSED** |
+| Q-018 | 2026-11-09 | Agent → Aditya | Django now (Oracle VM, some sysadmin) or defer it (Next.js + Supabase, zero ops)? | **CLOSED by D-031** — deferred. Next.js + Supabase only for Phase 0. |
+| Q-019 | 2026-11-09 | Aditya → Agent | "Can a ready-to-launch app handling 100 users be built and deployed on free Vercel + Supabase?" | Answered: **yes**, with 4 build conditions. Full budget in `ARCHITECTURE.md` §12. **CLOSED** |
+| Q-020 | 2026-11-09 | Agent → Aditya | Gemini free tier's data-use terms differ from paid. Are we willing to process real students' audio on the free tier, or do we need paid billing before Stage 5? | **OPEN** — legal, not cost |
+| Q-021 | 2026-11-09 | Agent → Aditya | Ready to scaffold? (`Q-010` still unanswered after the stack is settled.) | **OPEN** |
+| Q-022 | 2026-11-09 | Agent → Aditya | **Who are we actually selling to?** The Nov 7 chat says affluent US/Middle-East/Asia parents, ages 14–18. Our compliance work assumed India-first. This changes payments (Stripe vs Razorpay), currency, child-safety law and even the hero copy. | **OPEN — highest priority.** See R-021 |
+| Q-023 | 2026-11-09 | Agent → Aditya | **Is the Nov 27 / Dec 12 deadline still real?** It predates the motion-led landing page, the free-tier constraint and the staged plan. 18 days remain. | **OPEN** — see `ARCHITECTURE.md` §13 |
+| Q-024 | 2026-11-09 | Agent → Aditya | Pricing: which tier structure survives contact with reality? ($9.99 founding / $14.99 / $99 annual from the older chat.) | **OPEN** — D-038 says do not publish yet |
+| Q-025 | 2026-11-09 | Agent → Aditya | **Where do the Interview Simulator and Speech Vitals live** in the two-world identity model? (Third sub-ID? Format inside Debate? Cross-cutting layer?) | **OPEN** — proposed answer in D-036 |
+
+---
+
+## 3. Mistakes, fixes & lessons
+
+| ID | Date | What happened | How we found it | Fix | Lesson |
+|----|------|---------------|-----------------|-----|--------|
+| M-001 | 2026-11-09 | The `chatgpt.com/share/...` link **cannot be read**. Verified by attempting it directly: the fetch returns only the page shell (`Chat history`) because the transcript is client-rendered behind JavaScript. No conversation text is retrievable. | Aditya asked directly "did you read the link or the text?" — so it was tested rather than assumed | Aditya's inline paste is the only source. It is the *only* thing I have read, and every decision is traceable to it. | State this up front, unprompted, whenever a link is shared. Never let a user believe I read something I didn't. |
+| M-002 | 2026-11-09 | The pasted transcript is **partial**, not the whole conversation: it opens at "Loading older messages…", contains UI noise and image alt-text instead of images, and stops at "What comes next?" (Section 03). | Reading the paste closely | Treated the paste as authoritative but incomplete; every assumption drawn from a gap is marked `PROPOSED`/`OPEN` instead of `LOCKED`. | Ask for (a) the earlier part of the thread and (b) the actual design reference images before we design Sections 03–10. |
+
+### What the paste does **not** contain (explicit gap list)
+
+1. **Everything before the identity discussion.** The thread starts mid-conversation — the original product concept, the feature list, the initial brief, pricing thinking, and the reasoning that produced "Gift of Words" are all missing.
+2. **How the stack was chosen.** Django, Gemini and Supabase appear in the paste only as *given* facts (Aditya states them later) — the conversation that justified them is not in the text.
+3. **Detailed specs for landing sections 03–10.** Only titles and one-line intents exist.
+4. **Dashboard, onboarding assessment, rating/XP mechanics, subscription/billing** — referenced in passing, never specified.
+5. **The actual visual references.** Only image alt-text survived (`Syvra 3D Design`, `Fullygan Dashboards`, `LevelUp Labs`, `PersuadeMe`, `WHIF`, …). For a motion-led brand, the *images* are the brief. I have never seen them.
+
+*(Nothing has broken yet — the repo was empty at the start of this session.)*
+
+---
+
+## 4. Risk register
+
+| ID | Risk | Impact | Mitigation | Status |
+|----|------|--------|------------|--------|
+| R-001 | Public IDs like `GOW-USER-00042` are sequential and guessable → user enumeration / IDOR if any endpoint trusts an ID from the client. | Security | Separate **internal UUID (PK)** from **display ID**. Display ID uses Crockford base32 with a random component + checksum char. Authorisation only ever via session, never via ID. | OPEN |
+| R-002 | An immersive WebGL hero directly fights Core Web Vitals (LCP/INP). A 3D canvas as LCP element will fail on mid-range phones. | Performance / SEO | Text-first render: headline + CTA are static HTML/CSS and are the LCP element. Canvas lazy-mounts after first paint, heavy assets deferred, static poster as fallback. | OPEN |
+| R-003 | Voice recordings of teenagers = sensitive personal data (India DPDP Act 2023, GDPR if EU, COPPA if US under-13s). | Legal / trust | Decide age gate + parental consent before Stage 5; define retention window (e.g. audio deleted after scoring, transcript kept); data-region choice. | OPEN |
+| R-004 | Stack is only half-specified (no DB, no auth, no hosting, no storage). Every later decision depends on these. | Architecture | Resolve Q-008 before any schema/migration work. | OPEN |
+| R-005 | "Two independent worlds" invites copy-paste code → two dashboards, two rating engines, two sets of bugs. | Maintainability | One shared core (identity, XP engine, session model, evaluation pipeline) + per-world configuration and content packs. Independence is a *product* boundary, not necessarily a *code* boundary. | OPEN |
+| R-006 | Gemini is the only named AI vendor; evaluation quality, cost and latency all hinge on it. | Vendor risk / cost | Keep an `Evaluator` interface with adapters (Gemini now, others later); store rubric + model version with every score so re-scoring is possible. | OPEN |
+| R-007 | Landing page "speaks to everyone" while the product is built around students. Copy risk: too broad = speaks to nobody. | Product/marketing | Keep "everyone" as the *brand* position, but choose one primary persona for the *hero proof* (a student). Validate with real copy, not abstractions. | OPEN |
+| R-008 | Immersive motion + first-time visitor = animation delays comprehension. ChatGPT flagged this itself ("avoid delaying access to headline or CTA"). | UX | Headline and CTA render immediately; the 3D story plays *behind/around* them, not before them. Entrance animation must be skippable by scrolling. | OPEN |
+| R-009 | **Django on Vercel.** Serverless is request-scoped: 4.5 MB body cap (not configurable), 10s Hobby / 15s Pro-default timeouts, no persistent WebSockets, no worker processes. Audio uploads 413 *before* our code runs; AI scoring times out mid-request. | Architecture (blocking) | Split runtimes (D-020): Next.js on Vercel, Django + Celery on Railway/Render/Fly. Never force Django into a serverless function. | **MITIGATED** (pending D-020 sign-off) |
+| R-010 | **False confidence in Supabase RLS.** RLS applies only to requests carrying a user JWT through PostgREST. Django connects as superuser/`service_role` and bypasses RLS entirely. | Security | One authorisation model, in Django (querysets + permissions). RLS only where the browser talks to Supabase directly; `service_role` key never reaches the client. | OPEN |
+| R-011 | **AI cost runaway.** Every practice session costs money; a retry loop or a bot can generate a real bill overnight. | Cost | Per-user daily cap + Redis token bucket + spend alert. Log cost per session on every `ScoreResult`. | OPEN |
+| R-012 | **Age gate treated as a checkbox.** DPDP requires *verifiable* parental consent for under-18s — a multi-step flow with an auditable record, not a modal. | Legal | Design the flow in Stage 4 with auth; store the consent artefact (who, when, notice version). | OPEN |
+| R-013 | **Two runtimes drift.** Web and api deploy separately and will disagree about the contract within a week. | Maintainability | OpenAPI via `drf-spectacular` → generated TS client → CI fails on a breaking change. | OPEN |
+| R-014 | **Vercel Hobby is non-commercial by ToS.** A landing page advertising a product counts as commercial use; deployments can be suspended without warning. | Legal/availability | Fine while it is an unreleased personal project. Budget Vercel Pro ($20/mo) as the first real cost at launch. Cloudflare Pages (commercial allowed, free) is the escape hatch for a static landing page. | OPEN |
+| R-015 | **Free tier = no backups.** Supabase Free has none; Render's free Postgres is deleted after 30 days. One bad migration and the project is gone. | Data loss | Weekly `pg_dump` to a private Supabase Storage bucket or a laptop, starting the day the first real user signs up. Automate it before it matters. | OPEN |
+| R-016 | **Supabase free project pauses after 7 days idle.** A user opening the app after a quiet week sees a broken product. | Availability/trust | Uptime pinger (cron-job.org / UptimeRobot free) hitting one DB read every few hours during Phase 0. Remove at Pro. | OPEN |
+| R-017 | **Supabase built-in auth email is 2/hour and only delivers to your own organisation members.** Every real signup fails with `email_address_not_authorized`. Silent in the UI; shows in Auth logs. | Launch blocker | Custom SMTP (Resend free tier) configured **before** the first outside user is invited. Raise the hourly limit under Authentication → Rate Limits. | OPEN — must close before launch |
+| R-018 | **Gemini free tier is ~1,500 req/day and ~15 RPM, and its data-use terms differ from paid.** A class practising at the same time can exhaust the per-minute limit; minors' audio on a free tier may be used to improve the vendor's models. | Legal + reliability | Read the data-use terms before Stage 5. Design graceful 429 handling. Consider paid Gemini (~₹ negligible at 100 users) before real students upload voice. | OPEN |
+| R-019 | **Vercel active CPU (4 h/month) is the thinnest margin at 100 users**, and it is invisible until it runs out. | Capacity | Static/ISR landing page, small bundles (cold-start CPU counts), audio work in the browser, no SSR on hot paths. Watch the dashboard monthly. | OPEN |
+| R-020 | **Four-product sprawl.** Debate + Extempore + Interview Simulator + Speech Vitals + community + tournaments is six products. The older chat warned about this in one paragraph and recommended all of it in another. | Scope | Ship two worlds. Speech Vitals is a layer (D-036), not a product. Interview Room and community are explicitly post-launch. | OPEN |
+| R-021 | **Positioning/market mismatch.** A premium product for affluent US parents, priced in dollars, sold with a motion-heavy brand — while the build assumes India-first, ₹0 infrastructure and DPDP. Both can be true, but not accidentally. | Strategy | Q-022 must be answered before copy, pricing or compliance is finalised. | OPEN |
+| R-022 | **US child-safety law.** If the market is US teens: COPPA (under 13), state AADC-style laws, verifiable parental consent, and moderation duties — over and above DPDP. Voice data raises the bar further. | Legal | Decide market first (Q-022); the consent flow is then designed once, correctly. | OPEN |
+
+---
+
+## 5. Session log
+
+### S-01 — 2026-11-09 — Project intake & briefing
+
+**Goal of the session:** read the designer conversation, absorb the project, set up the recording system. Explicitly **learning only — no product code**.
+
+**Done**
+- Inspected repo: single `Initial commit`, only `README.md` (`# debate`). Nothing to work around.
+- Read the full pasted design conversation (Gift of Words / Assembly-style product design dialogue).
+- Created `docs/PROJECT-JOURNAL.md` (this file) and `docs/PRODUCT-BRIEF.md` (distilled understanding).
+- Logged D-001…D-017, Q-001…Q-011, M-001…M-002, R-001…R-008.
+
+**Extracted & understood**
+- Product name: **Gift of Words**. Repo name is `debate` (legacy; product name wins in UI).
+- Two learning worlds: **Debate World** and **Extempore World**, under one login.
+- Full hero specification v1.0 (copy, tokens, 8-step motion timeline, 12-point acceptance checklist).
+- 8-stage development sequence.
+
+**Deliberately not done**
+- No scaffolding, no `package.json`, no components. Aditya asked for learning first.
+- No decision invented on DB/auth/hosting — logged as Q-008 instead.
+
+**Open at end of session:** Q-008, Q-009, Q-010, Q-011.
+
+### S-02 — 2026-11-09 — Stack review (Supabase / Django / Vercel)
+
+**Goal:** Aditya answered the open stack questions; assess whether the combination is sound.
+
+**New constraints given**
+- Legal compliance must be handled properly, not deferred.
+- Motion graphics are mandatory.
+- Must run well on ₹15k Android phones; desktop-first build, mobile must still look great.
+- Supabase for auth. Django for backend. Vercel for hosting. Speech evaluation decided later.
+
+**Done**
+- Wrote `docs/ARCHITECTURE.md` (v0.2): target topology, auth flow, data model sketch, device-tier performance rulebook, legal baseline, missing-pieces list.
+- Verified Vercel platform limits against current documentation rather than memory: 4.5 MB request/response body cap (platform-level, not configurable), Hobby 10s / Pro 15s-default timeouts, no persistent WebSockets in Functions.
+- Logged D-018…D-026, Q-012…Q-016, R-009…R-013.
+
+**The finding that matters:** the individual choices are sound, but Django and Vercel are structurally incompatible for this product (audio uploads + AI scoring + background jobs + possibly live rooms). Recommendation: keep Django, move it off Vercel. Logged R-009, D-020.
+
+**Second finding:** Supabase RLS gives a feeling of security that evaporates the moment Django owns the database connection. Authorisation must live in one place. Logged R-010.
+
+**Third finding:** "motion is a must" + "₹15k phone" are only reconcilable through device tiering and pre-rendered fallbacks — not by shipping a smaller 3D scene to phones. Logged D-021, ARCHITECTURE §6.
+
+**Open at end of session:** Q-013 (keep Django?), Q-014 (Mumbai region?), Q-015 (ID format), Q-016 (email provider), plus Q-010 (scaffold now?).
+
+### S-03 — 2026-11-09 — Budget reality check
+
+**New constraint:** no money to spend while building.
+
+**Done**
+- Verified the 2026 free-tier landscape against current sources instead of recalling it: Vercel Hobby (non-commercial, 1M requests, 100 GB), Supabase Free (500 MB / 1 GB / 5 GB egress / 50k MAU, 7-day pause, no backups), Render Free (750 h, 512 MB, 15-min sleep, no free workers, free Postgres expires in 30 days), Railway (trial credit only), Fly (no free tier), Oracle Always Free (4 OCPU / 24 GB ARM, never sleeps, self-managed).
+- Wrote `ARCHITECTURE.md` §11: two-phase plan, three cost tables, "what breaks first".
+- Logged D-027…D-030, Q-017…Q-018, R-014…R-016.
+
+**Key finding:** with zero budget, **Django + Celery has no good free home except a self-managed Oracle VM**. Meanwhile Next.js + Supabase needs no third service, has no cold start, and removes the RLS caveat entirely because nothing holds a superuser connection. Simplifying is the *architecturally correct* answer here, not just the cheap one.
+
+**Second finding:** "delete audio after scoring" is required by DPDP *and* by the 1 GB storage cap. Legal and budget agree — good sign.
+
+**Open at end of session:** Q-018 (Django now or deferred) — this is the one blocking scaffolding.
+
+### S-04 — 2026-11-09 — Capacity check: 100 users on free tier
+
+**Question:** "Can a ready-to-launch app handling 100 users be built and deployed on the free tier of Vercel + Supabase, with the necessary stuff?"
+
+**Done**
+- Modelled real usage for this product (100 users × 3 sessions/week, 2-min audio, text feedback) against every free-tier limit.
+- Wrote `ARCHITECTURE.md` §12 with the budget table, the four launch conditions and the documented ceiling.
+- Logged D-031…D-033, Q-019…Q-021, R-017…R-019.
+
+**Answer:** Yes. Database, storage, egress, MAU and invocations all have 5–500× headroom. Three thin spots, all fixable by design rather than money:
+
+1. **Supabase auth email** — built-in sender is 2/hour and only reaches your own org members, so *real signups fail outright*. Custom SMTP (Resend) is mandatory before any outside user. This was the single most important finding of the session and it is invisible in the UI (`R-017`).
+2. **Storage** — 1 GB holds ~2,800 recordings (~10 weeks at 100 users). Deleting raw audio after scoring (already a DPDP requirement) turns this into a non-issue.
+3. **Vercel active CPU** — 4 h/month is the thinnest margin; a static landing page protects it.
+
+**Consequence:** stack locked (D-031). Django formally deferred. Four build conditions become part of the definition of "done" for launch (D-032).
+
+**New open item that is legal, not technical:** Gemini free-tier data terms vs minors' audio (`Q-020`, `R-018`). Must be resolved before Stage 5.
+
+**Blocking now:** Q-021 — permission to scaffold.
+
+### S-05 — 2026-11-09 — Reading the earlier (Nov 7) conversation
+
+**Instruction from Aditya:** read the older AI-Mode conversation for context, but *"the discussions we did above will prevail over these older chats."*
+
+**Done**
+- Read the full paste, stripped the Google-navigation noise.
+- Rewrote `PRODUCT-BRIEF.md` §9: what the older chat adds, a conflict table (older vs ours), and my assessment of it.
+- Added `ARCHITECTURE.md` §13: what an honest 18-day build looks like if the Nov 27 date still stands.
+- Logged D-034…D-038, Q-022…Q-025, R-020…R-022.
+
+**What is genuinely new:** the market (US/Middle East/Asia, affluent parents, ages 14–18), the pricing history, the **four** features rather than two, the human-competition layer, and the reason Django was ever in the picture (Aditya's existing Python experience).
+
+**The convergence worth noting:** the older chat's "Personal Weakness Engine" and the newer chat's "shared intelligence layer" are the same idea, reached independently in two different sessions. Both say the moat is *cross-cutting weakness detection*, not AI feedback. That is now D-035.
+
+**What I am rejecting from the older chat:** community + matchmaking + tournaments + payments inside a 20-day MVP. It contradicts itself — one paragraph names "empty community" as a launch-killer, another puts a community in the must-ship list. At 20 testers there is no pool to match against. D-037 re-affirms community as post-launch.
+
+**What it re-opened, uncomfortably:** market and geography (Q-022). Our legal and payment work so far assumed India-first; the older strategy is explicitly for paying US parents. Both are viable; only one can be built first.
+
+**Blocking:** Q-021 (scaffold), Q-022 (market), Q-023 (deadline).
+
+---
+
+## 6. Improvement backlog (notes to future us)
+
+- Turn the hero's 12-point acceptance checklist into a real `docs/hero-acceptance.md` checklist that we tick off during implementation.
+- Add a `docs/DESIGN-TOKENS.md` once the palette/type choices are final (they are currently "direction", not final values).
+- Decide a commit convention so each commit can reference decision IDs (e.g. `feat(hero): entrance timeline (D-015, R-002)`).
+- Consider a lightweight ADR (Architecture Decision Record) folder once we pass Stage 4; this journal is fine until then.
+
+---
+
+## 7. Notes on the identity model (my reading of D-003/D-004/D-005)
+
+```
+Account (GOW-USER-XXXXX)        ← one login, one billing, one overall profile
+├── Personal details
+├── Subscription & billing
+├── Shared preferences
+├── Debate profile (GOW-DEB-XXXXX)
+│    ├── sessions, arguments, rebuttals
+│    ├── rating, XP, learning path
+│    └── reports
+└── Extempore profile (GOW-EXT-XXXXX)
+     ├── speeches, fluency, pace
+     ├── rating, XP, learning path
+     └── reports
+```
+
+**Shared intelligence layer** reads from both profiles to find cross-cutting weaknesses (e.g. "spontaneous thinking" shows up as weak argument construction in Debate *and* weak structure in Extempore) and can recommend exercises in both — but **never merges ratings**.
+
+**Technical refinement I'd add (needs Aditya's approval → Q-009):** the `GOW-*` strings are *display identifiers*. The database primary key should be a UUID/ulid; the display ID is derived and can be regenerated. This keeps the friendly ID while making authorisation airtight.
+
+---
+
+### S-06 — 2026-11-09 — GO: scaffold + hero built
+
+**Instruction from Aditya:** *"Now GO."* Deadline confirmed aspirational; Razorpay chosen for payments; global product, India-first launch.
+
+**Built**
+- Monorepo layout: `web/` (Next.js 16 + TypeScript + Tailwind v4 + GSAP), `docs/`.
+- Design tokens in `web/app/globals.css` matching D-008 exactly.
+- `Hero` with GSAP entrance timeline, scroll transition, reduced-motion path.
+- `RibbonCanvas` — signature artwork: a continuous velocity field, three colour
+  streams, no dependencies, device-tiered, auto-degrades if frame time slips.
+- `Nav` — transparent → blurred on scroll, full-screen mobile panel.
+- `WorldsTeaser` — Debate/Extempore cards + a short vision statement.
+- `/signup`, `/signin` — honest placeholders (no fake forms).
+- README rewritten with run instructions.
+
+**Decisions taken during the build**
+- **D-039:** Signature hero artwork is a hand-written canvas velocity field, **not**
+  Three.js in this pass. Rationale: R3F + three.js ≈ 200 KB before a single particle;
+  the 2D field costs 0 KB, holds 60fps on low-end Android, and the entrance reads the
+  same. Three.js remains an upgrade path for tier-1 desktop only.
+- **D-040:** Fonts self-hosted (Space Grotesk + Inter, latin subset, 70 KB total),
+  preloaded. No Google Fonts request — protected the LCP budget.
+- **D-041:** Landing page must prerender as **static** (verified: `/`, `/signup`,
+  `/signin` all `○ Static`). This is launch condition #3 in `ARCHITECTURE.md` §12.2.
+- **D-042:** No dead links at any point. `/signin` and `/signup` exist as honest
+  "not open yet" pages rather than 404s or fake forms.
+
+**Mistakes found and fixed during this session**
+| # | Mistake | How it was caught | Fix |
+|---|---------|-------------------|-----|
+| M-003 | `bg-gradient-to-r` / `from-brand/70` silently produced **no CSS** in Tailwind v4 (renamed to `bg-linear-to-r`). The accent bars in the world cards were invisible. | Grepped the compiled stylesheet instead of trusting the build passing. | Renamed to v4 utilities; re-verified the rules exist in the output CSS. |
+| M-004 | Canvas could seed particles at `width = 0` on first layout, collapsing every particle onto x=0. | Code review before running. | Guard `nextW < 2` and a `seeded` flag. |
+| M-005 | Trail segments were drawn from the *new* x to the *new* y — vertical ticks that read as rain, not flow. | Re-reading the draw loop while tuning. | Draw from the previous position to the new one (true motion vector). |
+| M-006 | Opening `chatgpt.com` share links returns only the page shell; Chromium cannot be installed in this sandbox (missing `libnspr4`, no root), so **I cannot screenshot the UI myself**. | Attempted `@sparticuz/chromium` + playwright-core; failed with `libnspr4.so`. | Rely on live preview for Aditya + static verification (CSS rule presence, HTTP status, anchor integrity). Logged so it isn't mistaken for thoroughness. |
+
+**Verification performed (not visual — see M-006)**
+- `tsc --noEmit` clean · `next build` clean · all 3 routes return 200.
+- Every `href` resolves: `#top`, `#main`, `#explore`, `#vision`, `/signin`, `/signup`.
+- Fonts preloaded and self-hosted · design tokens present in compiled CSS.
+- Contrast pass raised several meta labels from /30–/35 to /45–/50 (AA on dark).
+- Hero headline clamp lowered to `2.2rem` minimum so 16 characters cannot overflow
+  a 360 px viewport.
+
+**Open:** visual QA by Aditya on real devices (this is the one thing I cannot do from
+inside the sandbox), then sections 03–10.
