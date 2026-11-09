@@ -15,7 +15,14 @@
  */
 
 const BASE = process.argv[2] ?? "http://localhost:3000";
-const ROUTES = ["/", "/develop", "/legal", "/signup", "/signin"];
+const ROUTES = [
+  "/",
+  "/develop",
+  "/legal",
+  "/signup",
+  "/signin",
+  "/signup/check-email?email=you@example.com&guardian=1",
+];
 
 // `group` / `peer` are markers used by variant selectors and never have rules.
 const MARKERS = new Set(["group", "peer"]);

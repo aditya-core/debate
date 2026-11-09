@@ -427,3 +427,84 @@ rendering black-on-black. Moved to `.chart-*` classes and inline `style` stops.
 **Lesson recorded (M-013):** "the build is green" and "the CSS file contains the rule"
 are not evidence that the page is styled. The only sufficient check is markup ↔
 stylesheet coherence, which is now automated and part of the definition of done.
+
+---
+
+### S-09 — 2026-11-09 — Stage 4: accounts, identity, and a form that is actually wired
+
+**Shape of the stage.** One login, three permanent identities, and a registration
+page that does real work instead of saying "you're early". Everything below is
+built; the only thing missing is a Supabase project to point at.
+
+**What exists now**
+
+```
+web/app/signup/page.tsx              real registration form
+web/app/signup/check-email/page.tsx  "we sent you a link" (+ guardian variant)
+web/app/signin/page.tsx              real sign-in, with link-expiry notice
+web/app/account/page.tsx             the three IDs, both worlds, status, sign out
+web/app/auth/callback/route.ts       PKCE exchange for the confirmation link
+web/app/auth/signout/route.ts        POST-only sign out
+web/proxy.ts                         session refresh (Next 16's renamed middleware)
+web/lib/auth/validation.ts           age + password rules, shared client/server
+web/lib/auth/actions.ts              signUp / signIn server actions
+web/lib/supabase/{server,client}.ts  cookie-bound clients, anon key only
+web/lib/http.ts                      request origin + in-site redirect guard
+supabase/migrations/0001_identity.sql schema, trigger, RLS
+web/.env.example                     the two public values, and nothing else
+docs/SUPABASE-SETUP.md               thirty minutes, start to verified signup
+```
+
+**Decisions**
+
+| # | Decision | Why |
+|---|----------|-----|
+| D-051 | Display IDs (`GOW-USER-…`, `GOW-DEB-…`, `GOW-EXT-…`) are **labels**, never credentials. UUIDs are the keys. | An ID you read aloud to a friend must not be a key you authenticate with. Crockford base32 (no I/L/O/U) with a checksum character survives being said out loud and typed back. |
+| D-052 | Both world profiles are created by the signup trigger, in the same transaction as the account. Never lazily. | "Debate exists, Extempore doesn't yet" is a state no other code should ever have to handle. |
+| D-053 | Under 18 → `status = 'pending_guardian_consent'` plus a `guardian_consents` row (14-day token, unique per account). Product floor is 13. | DPDP requires verifiable parental consent for minors. Storing the request, the notice version and the expiry is what makes it verifiable rather than decorative. |
+| D-054 | **No write policy and no write grant for clients** on any identity table. Reads are RLS-restricted to your own rows. | See M-015 — an update policy keyed on `auth_user_id = auth.uid()` would have let a minor set their own status to `active`. Writes will be SECURITY DEFINER functions that decide per column. |
+| D-055 | Session refresh lives in `proxy.ts`, not in pages. | Server Components cannot set cookies. Without an interception point a token that expires between requests is never refreshed. |
+| D-056 | Age and password-strength rules live in one pure module used by both the form and the server action. | The form must never disagree with the server about whether someone is 17 or 18 — and now a test proves they can't. |
+| D-057 | `/account` is `force-dynamic` and is not in the nav yet. | It depends on a session cookie; prerendering it is meaningless. The nav link becomes worth adding when the arenas exist, since a signed-in visitor otherwise has nowhere to go *into*. |
+
+**Mistakes**
+
+| # | Mistake | Fix |
+|---|---------|-----|
+| M-014 | `new Date("2000-02-31T00:00:00Z")` silently rolls into 2 March, so an impossible date of birth was accepted as real. The test caught it, not the code review. | `ageFrom` now builds the date from its parts and round-trips year/month/day; anything that doesn't match is rejected. |
+| M-015 | The migration shipped an `accounts` update policy keyed on `auth_user_id = auth.uid()`, which allows updating **any** column — including `status`. A minor could have self-approved. | Policy removed; write grants revoked from `anon`/`authenticated` on all four tables. |
+| M-016 | Redirects were built from `new URL(request.url)`, which behind the preview proxy is `http://0.0.0.0:3000` — a host the browser cannot resolve. | `requestOrigin()` reads `x-forwarded-host` / `x-forwarded-proto`. Verified: the confirmation callback now redirects to `https://<preview-host>/signin`. |
+| M-017 | `z.literal("on", { errorMap: … })` is Zod 3 syntax; Zod 4 rejects it at compile time. | `{ message: … }`. Caught by `tsc`, not at runtime. |
+| M-018 | Next 16 renamed the `middleware` file convention to `proxy`; the build warns on every run. | Renamed to `proxy.ts`, default export. Warning gone. |
+
+**Verified** (production build, port 3000, preview process running)
+
+- `tsc --noEmit` clean · `next build` clean · 10 routes, `/` still static.
+- `npm run audit:styles`: `/` 317/317 · `/develop` 194/194 · `/legal` 145/145 ·
+  `/signup` 209/209 · `/signin` 195/195 · `/signup/check-email` 185/185.
+- Both woff2 fonts `200 font/woff2`; all six routes `200`.
+- `npm test`: 6/6 — age boundaries at exactly the birthday, month-order drift,
+  future dates, impossible dates, leap day, password scale.
+- `POST /auth/signout` → `303` to `/`; `GET` → `405`.
+- `/auth/callback` with no code → `/signin?state=link`; with the preview's
+  forwarded host → `https://<preview-host>/…` (M-016 fix confirmed).
+- Without credentials, `/signup` shows the "database isn't connected" notice and
+  a submit returns the explicit "not configured" message. By design.
+
+**Not verified — and I will not claim otherwise**
+
+- Anything interactive: the guardian field appearing when a date of birth under
+  18 is typed, the password meter filling, the pending label on submit. The
+  sandbox still cannot run a browser (M-006), so these need Aditya's eyes.
+- The end-to-end Supabase path: no project exists, so no auth user, no trigger
+  run, no `/account` render with real rows. `docs/SUPABASE-SETUP.md` step 6 is
+  the checklist that closes this.
+
+**Blocked on Aditya**
+
+- Create the Supabase project (Mumbai `ap-south-1` unless he says otherwise),
+  paste two values into `web/.env.local`, run the migration. Q-014 answers itself
+  the moment he picks the region at project creation.
+- Q-016 (email provider) still gates real signups: Supabase's built-in sender is
+  2 messages/hour to organisation members only. Fine for testing his own address;
+  unusable for anyone else.

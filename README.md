@@ -3,8 +3,9 @@
 An intelligent communication training experience — two independent practice worlds
 (**Debate** and **Extempore**), one account, one shared intelligence layer.
 
-> **Status:** Stage 3 — the public site. Landing page, theme system, build-in-public
-> page and legal drafts. No auth, no database, no AI calls yet.
+> **Status:** Stage 4 — registration and identity. The public site is done, and
+> accounts now sign up, sign in and carry two world identities in Supabase.
+> The practice arenas and AI scoring are next. No AI calls yet.
 
 ## Run it
 
@@ -17,22 +18,35 @@ npm run dev      # http://localhost:3000
 Other commands:
 
 ```bash
-npm run build      # production build (all routes prerender as static)
+npm run build      # production build → .next-build
 npm run typecheck  # tsc --noEmit
+npm test           # age + password rules (node:test)
+npm run audit:styles  # every class in every page must exist in its stylesheet
 ```
+
+Accounts need a database. Create a free Supabase project, paste two values into
+`web/.env.local`, run one SQL file — `docs/SUPABASE-SETUP.md` walks through it.
+Without it, sign-up and sign-in say so explicitly instead of pretending.
 
 ## Repo layout
 
 ```
 docs/        the thinking: product brief, architecture, decision journal
 web/         the Next.js application (deployed to Vercel)
-  app/         routes: /, /develop, /legal, /signup, /signin (+ design tokens)
+  app/         routes: /, /develop, /legal, /signup, /signin, /account,
+               /auth/callback, /auth/signout (+ design tokens)
   components/
     sections/  Hero, Marquee, Problem, HowItWorks, Worlds, SkillData,
                Scorecard, Vision, FinalCTA, LiveDemo
     charts/    Radar, Bars, Sparkline — hand-built SVG, no chart library
-  lib/         sample data for the illustrative charts
+    auth/      AuthShell, SignUpForm, SignInForm, SetupNotice
+  lib/
+    auth/      server actions + the age/password rules both sides share
+    supabase/  cookie-bound clients (anon key only)
+  proxy.ts     session refresh
   public/fonts self-hosted woff2 (latin subset)
+supabase/
+  migrations/  0001_identity.sql — accounts, two world profiles, RLS
 ```
 
 ## Where the reasoning lives
@@ -40,6 +54,7 @@ web/         the Next.js application (deployed to Vercel)
 - `docs/PRODUCT-BRIEF.md` — what we are building and why
 - `docs/ARCHITECTURE.md` — stack, capacity budgets, launch conditions
 - `docs/PROJECT-JOURNAL.md` — every decision, question, mistake and fix, append-only
+- `docs/SUPABASE-SETUP.md` — database setup, from empty project to verified sign-up
 
 Every commit references the decision IDs it implements.
 
@@ -53,4 +68,9 @@ Every commit references the decision IDs it implements.
   content appears if the motion layer ever fails.
 - **Every route prerenders as static**, which keeps the hosting CPU budget near zero.
 - **No dead links.** Unbuilt features are labelled "soon" rather than linked to nowhere.
+- **Row Level Security on every table**, and no service-role key anywhere in the app.
+  Clients read their own rows and write nothing; privileged work happens in Postgres.
+- **One account, three identities.** A `GOW-USER` account and a `GOW-DEB` +
+  `GOW-EXT` pair, created together by a database trigger, with independent ratings.
+  Display IDs are labels — the key is a UUID.
 - **All sample data is labelled** as illustrative wherever it appears.

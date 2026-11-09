@@ -512,6 +512,28 @@ html:not([data-js]) .spark-line {
   }
 }
 
+/* Reveals the guardian-consent block when the date of birth implies a minor. */
+.guardian-note {
+  animation: guardian-in 0.35s var(--ease) both;
+}
+
+@keyframes guardian-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .guardian-note {
+    animation: none;
+  }
+}
+
 /* --- equalizer --------------------------------------------------- */
 @keyframes eq {
   0%,

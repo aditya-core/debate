@@ -1,17 +1,23 @@
 import type { Metadata } from "next";
-import EarlyAccess from "@/components/EarlyAccess";
+import AuthShell from "@/components/auth/AuthShell";
+import SetupNotice from "@/components/auth/SetupNotice";
+import SignUpForm from "@/components/auth/SignUpForm";
 
 export const metadata: Metadata = {
-  title: "Begin your journey — Gift of Words",
-  robots: { index: false, follow: false },
+  title: "Create your account — Gift of Words",
+  description:
+    "One login, two worlds. Create your Gift of Words account to practise debate and extempore.",
+  robots: { index: false, follow: true },
 };
 
 export default function SignupPage() {
   return (
-    <EarlyAccess
-      eyebrow="Gift of Words"
-      title="You're early."
-      body="Registration opens with the first cohort. The practice arena, the scorecards and the two worlds are being built right now."
-    />
+    <AuthShell
+      title="Create your account"
+      subtitle="One login unlocks both worlds. It takes about a minute."
+    >
+      <SetupNotice />
+      <SignUpForm />
+    </AuthShell>
   );
 }
