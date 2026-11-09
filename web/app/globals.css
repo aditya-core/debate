@@ -601,6 +601,301 @@ html:not([data-js]) .spark-line {
 }
 
 /* ==================================================================
+   MOTION LAYER
+   One curve, used everywhere: --ease. Nothing here needs a library,
+   and every effect is a transform or an opacity — both composited,
+   both cheap on a low-end phone.
+================================================================== */
+
+/* --- scroll progress hairline ------------------------------------- */
+.scroll-progress {
+  position: fixed;
+  inset-inline: 0;
+  top: 0;
+  z-index: 60;
+  height: 2px;
+  pointer-events: none;
+}
+
+.scroll-progress-bar {
+  display: block;
+  height: 100%;
+  transform: scaleX(0);
+  transform-origin: left center;
+  background-image: linear-gradient(
+    90deg,
+    var(--c-brand) 0%,
+    var(--c-sky) 55%,
+    var(--c-flare) 100%
+  );
+}
+
+/* --- masked line reveal ------------------------------------------
+   The headline is cut into lines; each line sits inside its own
+   clipping box and rises into place. Descenders are safe because the
+   clip box is padded and the padding pulled back.                    */
+.mask {
+  display: block;
+  overflow: hidden;
+  padding-block: 0.09em;
+  margin-block: -0.09em;
+}
+
+.mask-line {
+  display: block;
+  transform: translateY(115%);
+  opacity: 0;
+}
+
+html[data-js] .mask-line {
+  animation: mask-up 1.05s var(--ease) both;
+  animation-delay: var(--d, 0ms);
+}
+
+html:not([data-js]) .mask-line {
+  transform: none;
+  opacity: 1;
+}
+
+/* Below the fold the same effect waits for the section to arrive. */
+.reveal-lines .mask-line {
+  animation: none;
+  opacity: 0;
+  transform: translateY(115%);
+}
+
+.reveal-lines.is-in .mask-line {
+  animation: mask-up 1.05s var(--ease) both;
+  animation-delay: var(--d, 0ms);
+}
+
+@keyframes mask-up {
+  from {
+    transform: translateY(115%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* --- load-in rise -------------------------------------------------
+   Used for hero copy that is on screen at first paint.                */
+.rise {
+  opacity: 0;
+  transform: translateY(18px);
+  animation: rise-in 0.9s var(--ease) both;
+  animation-delay: var(--d, 0ms);
+}
+
+html:not([data-js]) .rise {
+  opacity: 1;
+  transform: none;
+}
+
+@keyframes rise-in {
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* --- drawn underline ---------------------------------------------
+   A word that underlines itself after the line has landed. The
+   pseudo-element has its own background, so it is unaffected by the
+   text clip on the word itself.                                      */
+.accent-word {
+  position: relative;
+  display: inline-block;
+  background-image: linear-gradient(
+    100deg,
+    var(--c-brand) 0%,
+    var(--c-sky) 58%,
+    var(--c-aqua) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.accent-word::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -0.03em;
+  height: 0.055em;
+  border-radius: 99px;
+  background-image: linear-gradient(90deg, var(--c-brand), var(--c-aqua));
+  transform: scaleX(0);
+  transform-origin: left center;
+  animation: ink-grow 0.95s var(--ease) forwards;
+  animation-delay: var(--d, 1.15s);
+}
+
+@keyframes ink-grow {
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/* --- magnetic wrapper --------------------------------------------
+   The child is pulled toward the pointer; the transition is what makes
+   it feel weighted rather than glued.                               */
+.magnetic {
+  display: inline-block;
+  will-change: transform;
+  transition: transform 0.35s var(--ease);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .magnetic {
+    transition: none;
+  }
+}
+
+/* --- sheen sweep on the primary action ---------------------------- */
+.btn-sheen {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-sheen::after {
+  content: "";
+  position: absolute;
+  top: -20%;
+  bottom: -20%;
+  width: 32%;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.38),
+    transparent
+  );
+  transform: translateX(-140%) skewX(-18deg);
+  animation: sheen 5.2s ease-in-out infinite;
+  animation-delay: 1.6s;
+}
+
+@keyframes sheen {
+  0% {
+    transform: translateX(-140%) skewX(-18deg);
+  }
+  55%,
+  100% {
+    transform: translateX(420%) skewX(-18deg);
+  }
+}
+
+/* --- cursor spotlight --------------------------------------------
+   Activated by a pointer handler that writes --mx/--my; with no
+   pointer (touch, keyboard) the card simply never lights up.        */
+.spot {
+  position: relative;
+  isolation: isolate;
+}
+
+.spot::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.4s var(--ease);
+  background: radial-gradient(
+    300px circle at var(--mx, 50%) var(--my, 50%),
+    color-mix(in oklab, var(--c-brand) 20%, transparent),
+    transparent 62%
+  );
+}
+
+.spot:hover::before,
+.spot:focus-within::before {
+  opacity: 1;
+}
+
+/* --- ambient floats ----------------------------------------------- */
+.float-a {
+  animation: float-y 7s ease-in-out infinite;
+}
+
+.float-b {
+  animation: float-y 5.4s ease-in-out infinite;
+  animation-delay: 0.6s;
+}
+
+@keyframes float-y {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-9px);
+  }
+}
+
+.ring-pulse {
+  animation: ring-out 3.4s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+
+@keyframes ring-out {
+  0% {
+    transform: scale(0.55);
+    opacity: 0.5;
+  }
+  70%,
+  100% {
+    transform: scale(1.9);
+    opacity: 0;
+  }
+}
+
+/* --- waveform -----------------------------------------------------
+   Seeded heights (no Math.random, so server and client agree), each
+   bar dancing on its own duration and offset.                        */
+.wave-bar {
+  transform-origin: center bottom;
+  animation: wave-dance var(--dur, 900ms) ease-in-out infinite;
+  animation-delay: var(--delay, 0ms);
+}
+
+@keyframes wave-dance {
+  0%,
+  100% {
+    transform: scaleY(var(--lo, 0.25));
+  }
+  50% {
+    transform: scaleY(var(--hi, 1));
+  }
+}
+
+/* --- typewriter caret --------------------------------------------- */
+.caret {
+  display: inline-block;
+  width: 2px;
+  height: 1.05em;
+  translate: 0 3px;
+  margin-left: 2px;
+  background: currentColor;
+  animation: caret-blink 1s step-end infinite;
+}
+
+@keyframes caret-blink {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
+/* ==================================================================
    ACCESSIBILITY
 ================================================================== */
 @media (prefers-reduced-motion: reduce) {

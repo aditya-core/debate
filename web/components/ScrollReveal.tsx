@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import SpotlightCursor from "./motion/SpotlightCursor";
 
 /**
  * One observer for the whole page — not one per component.
@@ -8,7 +9,9 @@ import { useEffect } from "react";
  */
 export default function ScrollReveal() {
   useEffect(() => {
-    const nodes = Array.from(document.querySelectorAll<HTMLElement>(".reveal"));
+    const nodes = Array.from(
+      document.querySelectorAll<HTMLElement>(".reveal, .reveal-lines"),
+    );
 
     if (!("IntersectionObserver" in window)) {
       nodes.forEach((n) => n.classList.add("is-in"));
@@ -30,5 +33,9 @@ export default function ScrollReveal() {
     return () => io.disconnect();
   }, []);
 
-  return null;
+  return (
+    <>
+      <SpotlightCursor />
+    </>
+  );
 }

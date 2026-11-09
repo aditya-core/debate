@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Typewriter from "@/components/motion/Typewriter";
+import Waveform from "@/components/motion/Waveform";
 
 const PHASES = ["speak", "score", "feedback"] as const;
 type Phase = (typeof PHASES)[number];
@@ -97,28 +99,19 @@ function Speak() {
         “Is convenience quietly making us less capable?”
       </p>
 
-      <div className="mt-6 flex h-16 items-center justify-center gap-[3px]">
-        {Array.from({ length: 38 }).map((_, i) => (
-          <span
-            key={i}
-            className="eq-bar w-[3px] rounded-full"
-            style={{
-              height: `${28 + Math.abs(Math.sin(i * 1.7)) * 34}px`,
-              animationDelay: `${(i % 9) * 0.09}s`,
-              background:
-                i % 3 === 0
-                  ? "var(--c-brand)"
-                  : i % 3 === 1
-                    ? "var(--c-sky)"
-                    : "var(--c-mint)",
-              opacity: 0.85,
-            }}
-          />
-        ))}
+      <div className="mt-5 h-14 text-brand">
+        <Waveform bars={40} className="h-full w-full" />
       </div>
 
-      <p className="mt-4 text-center text-[0.8rem] text-muted">
-        Listening… speak for 90 seconds
+      <p className="mt-4 min-h-[3.4rem] text-[0.86rem] leading-relaxed text-muted">
+        <span className="mr-2 font-display text-[0.6rem] uppercase tracking-[0.18em] text-faint">
+          You
+        </span>
+        <Typewriter
+          text="So here's the thing — convenience is a loan against capability…"
+          speed={26}
+          startDelay={700}
+        />
       </p>
     </div>
   );

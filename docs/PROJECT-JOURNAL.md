@@ -561,3 +561,92 @@ message appearing as you type) — no browser in this sandbox (M-006).
 still carries the marketing footer. It is not wrong, but an authenticated app
 shell with its own nav is the right long-term answer, and that belongs with the
 arenas in Stage 5.
+
+---
+
+### S-11 — 2026-11-09 — Borrowing the craft, keeping the identity
+
+**What Aditya gave me:** 19 files from another dev's landing page — React + Vite +
+Tailwind 4 + framer-motion, with an editorial serif, a warm paper canvas and ember
+red. He asked for the *feel*: the motion, the animations, the effects.
+
+**What I found in it.** The quality was not in the colour. It was in five things:
+masked line reveals on one shared easing curve (`cubic-bezier(.22,1,.36,1)`); a
+hero panel that *performs* the product (typewriter transcript, 44 seeded waveform
+bars, a coach line that expands once typing finishes, two chips floating on 7s and
+5.4s); small physical touches (magnetic CTA, sheen sweep, cursor spotlight,
+self-drawing underline); typographic nerve (display to 6.4rem at 0.92 leading, one
+light italic word in the accent colour, mono micro-labels at 9.5px/0.18em); and a
+scroll progress hairline.
+
+**Decision (Aditya's, offered as a three-way fork): D-060 — keep our identity,
+import the craft.** Charcoal + violet/blue/magenta/cyan and Space Grotesk stay
+(D-008 unchanged); no rebrand of auth, legal or develop.
+
+**D-061 — no framer-motion.** Their page leans on it in 14 files. We rebuilt the
+same vocabulary as CSS keyframes plus five tiny vanilla components. Measured cost
+on `/`: **178 KB gzipped JS, 10 KB gzipped CSS**. Their motion layer alone would
+have added roughly 40–60 KB gzipped — on the ₹15k phones this product is for,
+that is the difference between a page that arrives and one that is watched
+arriving.
+
+**D-062 — one curve, one observer, one listener.** `--ease` is used for every
+transition and keyframe; `ScrollReveal` remains the single IntersectionObserver;
+`SpotlightCursor` is a single passive `pointermove` listener with an rAF guard,
+mounted once, writing `--mx`/`--my` straight to the node. No per-card React state,
+no re-render per frame.
+
+**D-063 — I refused their numbers.** Their page claims *"42,318 speakers · 61
+countries"*, "SOC 2 Type II", "Cohort 14 enrolling" and a countdown timer. We are
+pre-launch. Ours stay real and labelled: two worlds, six skills, five minutes a
+day, and the demo panel still says "Illustrative interface — not a live session."
+
+**Built**
+
+| Piece | What it does |
+|---|---|
+| `.mask` / `.mask-line` | Headline cut into lines, each rising from 115% with 110 ms stagger, 1.05 s on `--ease`. No JS: pure CSS animation with per-line delay. |
+| `.accent-word` | The last word carries its own gradient *and* underlines itself (scaleX 0→1 at 1.08 s), unaffected by the text clip because the underline is a pseudo-element background. |
+| `.rise` | Staggered load-in for the pill, subcopy, CTAs and stats (60 → 820 ms). |
+| `.btn-sheen` | A light sweep across the primary CTA every 5.2 s, skewed 18°. |
+| `.magnetic` | CTA follows the pointer ~22%, desktop only, bails under reduced motion. |
+| `Waveform` | 44 bars, heights from a seeded sine hash — deterministic, so server and client agree. Each bar has its own duration and negative delay. |
+| `Typewriter` | Types the transcript, caret blinking, restarts each rotation. Reduced motion prints the whole line. |
+| `CountUp` | Hero stats count once on view with ease-out cubic; reduced motion gets the final value. |
+| `SpotlightCursor` | Cursor spotlight on the Worlds and How-it-works cards. |
+| `.scroll-progress` | 2 px gradient hairline under the header, scaleX driven by scroll. |
+
+**Verified** (production build, port 3000)
+
+- `tsc` clean · `npm test` 7/7 · build clean, `/` still `○ Static`.
+- Style audit: `/` **324/324** (was 317), `/develop` 196, `/legal` 147, `/signup`
+  153, `/signin` 136, `/signup/check-email` 130 — every class has a rule.
+- All eight keyframes present in the served stylesheet: `mask-up`, `ink-grow`,
+  `sheen`, `wave-dance`, `rise-in`, `ring-out`, `float-y`, `caret-blink`.
+- Markup confirmed in the served HTML: 2 mask lines, the accent word, the sheen
+  class, both floating chips, 40 waveform bars, 10 spotlight surfaces, the
+  progress bar, the magnetic wrapper.
+- H1 still reads exactly "Unlock the power of your words." (D-011 intact).
+
+**M-019 — their screenshots arrived with no stylesheet.** All four images show
+bare text, no cards, no grid, plus a dev overlay. Same failure class as our S-08.
+It is a useful reminder from the outside: source code that exists and a build that
+passes still say nothing about what the page looks like. I judged the code.
+
+**Not verified — needs his eyes**
+
+Everything visual. This sandbox cannot run a browser (M-006), so I cannot confirm
+the mask reveal lands cleanly, whether the chips collide with the panel at 768 px,
+or whether the accent-word underline sits at the right optical weight under the
+descender of "words." Those are judgements for a screen, not for a terminal.
+
+**Left on the table (deliberately, for a later pass)**
+
+- Section headings could take the same mask reveal (`reveal-lines` is built and
+  wired into the observer, unused so far) — I did not force line breaks into
+  responsive headings without being able to look at them.
+- Their scroll-driven market map + dossier panel is genuinely good interaction
+  design; the equivalent for us is a world/skill selector, and it deserves real
+  data rather than more invented numbers.
+- Back-to-top ring, FAQ and pricing sections exist in their build; ours need copy
+  decisions (Q-024) before they are worth building.

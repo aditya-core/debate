@@ -64,7 +64,7 @@ export default function Worlds() {
           {WORLDS.map((w, i) => (
             <article
               key={w.id}
-              className="reveal card card-hover group overflow-hidden"
+              className="reveal card card-hover spot group overflow-hidden"
               style={{ "--d": `${i * 110}ms` }}
             >
               {/* visual header */}

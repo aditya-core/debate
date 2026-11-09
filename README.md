@@ -41,6 +41,7 @@ web/         the Next.js application (deployed to Vercel)
     sections/  Hero, Marquee, Problem, HowItWorks, Worlds, SkillData,
                Scorecard, Vision, FinalCTA, LiveDemo
     charts/    Radar, Bars, Sparkline — hand-built SVG, no chart library
+    motion/    Magnetic, CountUp, Typewriter, Waveform, SpotlightCursor
     auth/      AuthShell, SignUpForm, SignInForm, SetupNotice
   lib/
     auth/      server actions + the age/password rules both sides share
@@ -65,7 +66,10 @@ Every commit references the decision IDs it implements.
 - **Two complete themes.** Light is the default; the choice follows the operating
   system until the visitor flips the switch, and is then remembered. No flash on load.
 - **Motion is CSS and SVG only** — no WebGL, no animation library. Everything
-  degrades to a static page under `prefers-reduced-motion`.
+  degrades to a static page under `prefers-reduced-motion`. The interactive
+  touches (magnetic button, count-up, typewriter, cursor spotlight) are a few
+  kilobytes of vanilla JavaScript, not a framework: 178 KB gzipped JS and 10 KB
+  gzipped CSS for the whole landing page.
 - **Nothing depends on JavaScript to be readable**; a reveal-fallback also guarantees
   content appears if the motion layer ever fails.
 - **Every route prerenders as static**, which keeps the hosting CPU budget near zero.

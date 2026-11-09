@@ -40,7 +40,7 @@ export default function HowItWorks() {
           {STEPS.map((s, i) => (
             <li
               key={s.n}
-              className="reveal card relative p-6 sm:p-7"
+              className="reveal card spot relative p-6 sm:p-7"
               style={{ "--d": `${i * 100}ms` }}
             >
               <div className="flex items-center gap-3">

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import ThemeToggle from "./ThemeToggle";
 
 const LINKS = [
@@ -38,12 +38,26 @@ export function Mark({ size = 26 }: { size?: number }) {
 export default function Nav() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+  const progress = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 12);
+    // One listener drives both the header state and the progress hairline.
+    // The bar is written straight to the node so scrolling never re-renders.
+    const onScroll = () => {
+      setScrolled(window.scrollY > 12);
+      const el = progress.current;
+      if (!el) return;
+      const doc = document.documentElement;
+      const max = doc.scrollHeight - doc.clientHeight;
+      el.style.transform = `scaleX(${max > 0 ? Math.min(1, doc.scrollTop / max) : 0})`;
+    };
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    window.addEventListener("resize", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
   }, []);
 
   useEffect(() => {
@@ -55,6 +69,11 @@ export default function Nav() {
 
   return (
     <>
+      {/* how far through the page you are — a hairline, not a widget */}
+      <span aria-hidden="true" className="scroll-progress">
+        <span ref={progress} className="scroll-progress-bar" />
+      </span>
+
       <header
         className={[
         "sticky top-0 z-50 transition-all duration-500",
