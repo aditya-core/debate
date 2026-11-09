@@ -551,6 +551,29 @@ html:not([data-js]) .spark-line {
   transform: scaleX(1);
 }
 
+/* SVG chart primitives.
+   `var()` does not resolve inside SVG *presentation attributes*, only in
+   CSS declarations — so these live here, not on the elements. */
+.chart-grid {
+  stroke: var(--c-line);
+}
+
+.chart-point {
+  fill: var(--c-surface);
+}
+
+.chart-label {
+  fill: var(--c-muted);
+  font-family: var(--font-display);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.chart-dot {
+  fill: var(--c-sky);
+}
+
 .tnum {
   font-variant-numeric: tabular-nums;
 }

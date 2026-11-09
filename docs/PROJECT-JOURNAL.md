@@ -388,3 +388,42 @@ giving, make it alive."
 
 **Still open (unchanged):** Q-022 market/pricing, and visual QA on real devices —
 the sandbox still cannot run a browser (M-006).
+
+---
+
+### S-08 — 2026-11-09 — The page rendered unstyled (serious)
+
+**What Aditya saw:** the site with correct copy but no layout — no cards, no grid,
+default font sizes, buttons still gradient. Effectively an unstyled HTML document.
+
+**Root cause (verified, not guessed):** the dev server was serving a **mismatched
+HTML/CSS pair**. `next build` was run while `next dev` was running against the *same*
+`.next` directory. The build overwrote the dev server's output, so the HTML came from
+one compilation and the stylesheet from another. The directory contained both
+`BUILD_ID` (production) and `dev/` at the same time — the fingerprint of the collision.
+A secondary aggravating factor: in dev the CSS chunk keeps a **stable filename**
+(`app_globals_….css`), so a browser that cached the previous stylesheet keeps using it
+against new markup, which reproduces the same symptom even after the server is fixed.
+
+**This is my mistake.** The build passing and the CSS containing the right rules were
+both true and both irrelevant — I never verified that the stylesheet a page *links to*
+matches the classes in that page's markup.
+
+**Fixed**
+- **D-048:** production builds now go to a separate `distDir` (`.next-build`), so a
+  build can never clobber a running dev server again.
+- **D-049:** `npm run audit:styles` — a script that fetches every route, extracts every
+  class from the rendered HTML, and fails if any class has no rule in the CSS that page
+  actually links to. Currently: **317/317, 194/194, 145/145, 135/135, 135/135 matched.**
+- **D-050:** the preview now runs the **production build**, so every asset has a
+  content-hashed filename. A stale cache can no longer produce a mixed page.
+- Cleared the corrupted `.next` entirely.
+
+**Second real bug found while verifying (M-012):** the SVG charts used
+`fill="var(--c-muted)"` and `stopColor="var(--c-brand)"` as *presentation attributes*.
+Custom properties do not resolve there — only in CSS declarations — so the radar was
+rendering black-on-black. Moved to `.chart-*` classes and inline `style` stops.
+
+**Lesson recorded (M-013):** "the build is green" and "the CSS file contains the rule"
+are not evidence that the page is styled. The only sufficient check is markup ↔
+stylesheet coherence, which is now automated and part of the definition of done.

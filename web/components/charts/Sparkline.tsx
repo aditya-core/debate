@@ -26,12 +26,12 @@ export default function Sparkline({
     <svg viewBox={`0 0 ${width} ${height}`} width="100%" role="img" aria-label={`Rating trend, ${min} to ${max}`}>
       <defs>
         <linearGradient id="spark-area" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="var(--c-brand)" stopOpacity="0.22" />
-          <stop offset="100%" stopColor="var(--c-brand)" stopOpacity="0" />
+          <stop offset="0%" style={{ stopColor: "var(--c-brand)", stopOpacity: 0.22 }} />
+          <stop offset="100%" style={{ stopColor: "var(--c-brand)", stopOpacity: 0 }} />
         </linearGradient>
         <linearGradient id="spark-line-g" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stopColor="var(--c-brand)" />
-          <stop offset="100%" stopColor="var(--c-sky)" />
+          <stop offset="0%" style={{ stopColor: "var(--c-brand)" }} />
+          <stop offset="100%" style={{ stopColor: "var(--c-sky)" }} />
         </linearGradient>
       </defs>
 
@@ -45,8 +45,8 @@ export default function Sparkline({
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-      <circle cx={last[0]} cy={last[1]} r="4" fill="var(--c-sky)" />
-      <circle cx={last[0]} cy={last[1]} r="8" fill="var(--c-sky)" opacity="0.18" />
+      <circle cx={last[0]} cy={last[1]} r="4" className="chart-dot" />
+      <circle cx={last[0]} cy={last[1]} r="8" className="chart-dot" opacity="0.18" />
     </svg>
   );
 }

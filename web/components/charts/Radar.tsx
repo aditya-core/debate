@@ -41,13 +41,13 @@ export default function Radar({
     >
       <defs>
         <linearGradient id={`${id}-fill`} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="var(--c-brand)" stopOpacity="0.42" />
-          <stop offset="60%" stopColor="var(--c-sky)" stopOpacity="0.28" />
-          <stop offset="100%" stopColor="var(--c-aqua)" stopOpacity="0.18" />
+          <stop offset="0%" style={{ stopColor: "var(--c-brand)", stopOpacity: 0.42 }} />
+          <stop offset="60%" style={{ stopColor: "var(--c-sky)", stopOpacity: 0.28 }} />
+          <stop offset="100%" style={{ stopColor: "var(--c-aqua)", stopOpacity: 0.18 }} />
         </linearGradient>
         <linearGradient id={`${id}-stroke`} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="var(--c-brand)" />
-          <stop offset="100%" stopColor="var(--c-sky)" />
+          <stop offset="0%" style={{ stopColor: "var(--c-brand)" }} />
+          <stop offset="100%" style={{ stopColor: "var(--c-sky)" }} />
         </linearGradient>
       </defs>
 
@@ -62,7 +62,7 @@ export default function Radar({
             })
             .join(" ")}
           fill="none"
-          stroke="var(--c-line)"
+          className="chart-grid"
           strokeWidth="1"
         />
       ))}
@@ -77,7 +77,7 @@ export default function Radar({
             y1={cy}
             x2={p.x}
             y2={p.y}
-            stroke="var(--c-line)"
+            className="chart-grid"
             strokeWidth="1"
           />
         );
@@ -102,7 +102,7 @@ export default function Radar({
             cx={p.x}
             cy={p.y}
             r="3.4"
-            fill="var(--c-surface)"
+            className="chart-point"
             stroke={`url(#${id}-stroke)`}
             strokeWidth="2"
           />
@@ -120,11 +120,7 @@ export default function Radar({
             x={p.x}
             y={p.y + 4}
             textAnchor={anchor}
-            fontSize="10.5"
-            fontFamily="var(--font-display)"
-            letterSpacing="0.06em"
-            fill="var(--c-muted)"
-            style={{ textTransform: "uppercase" }}
+            className="chart-label"
           >
             {d.label}
           </text>
