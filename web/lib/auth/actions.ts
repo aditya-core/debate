@@ -218,12 +218,26 @@ export async function signUpAction(
     redirect("/onboarding");
   }
 
-  // No session means Supabase is still sending its own confirmation link.
+  // No session means Supabase is still demanding its own confirmation link.
+  // In OTP mode that is a configuration fault, not a user path: say so here
+  // instead of sending the learner to a page about a link we never sent.
   if (VERIFICATION_ENABLED) {
-    console.warn(
-      "[signup] EMAIL_VERIFICATION_MODE is 'otp' but Supabase returned no session. " +
-        "Turn 'Confirm email' OFF — we send the code ourselves.",
+    console.error(
+      [
+        "",
+        "[signup] CONFIGURATION FAULT — six-digit verification cannot start.",
+        "  Supabase returned no session, so 'Confirm email' is still ON.",
+        "  Fix: Authentication → Sign In / Providers → Email → Confirm email OFF,",
+        "       save, then restart the dev server.  (npm run doctor checks this.)",
+        "",
+      ].join("\n"),
     );
+
+    return {
+      status: "error",
+      message:
+        "Email verification isn't set up correctly on our side, so we can't send you a code yet. This is ours to fix — please try again later.",
+    };
   }
 
   redirect(`/signup/check-email?email=${encodeURIComponent(email)}&guardian=${requiresGuardian ? "1" : "0"}`);

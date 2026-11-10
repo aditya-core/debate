@@ -233,6 +233,32 @@ there is.
 straight to `/onboarding`. Cost of being off: an account can be created with an
 address nobody has proven they own — recorded as A-08 in `docs/SECURITY.md`.
 
+## 5b. When it doesn't work: `npm run doctor`
+
+Two switches must agree — the mode in `.env.local` and "Confirm email" in the
+Supabase dashboard. When they disagree, sign-up silently falls back to the old
+link page, which is the least useful thing it could do. So there is a check:
+
+```bash
+cd web && npm run doctor
+```
+
+It reads `.env.local`, asks Supabase's public settings endpoint what it actually
+does with new sign-ups (`mailer_autoconfirm`), and prints the verdict:
+
+```
+Supabase auth settings
+  ✗ mailer_autoconfirm         false
+
+Verdict
+  ✗ Sign-up cannot work in this state.
+    Fix: Authentication → Sign In / Providers → Email →
+         turn Confirm email OFF, then Save, then restart the dev server.
+```
+
+Exit code 1 when something is wrong, 0 when it is safe to test. Read-only, anon
+key only, nothing is changed.
+
 ## 6. Restart and verify
 
 `NEXT_PUBLIC_*` values are baked in at build time, so restart the server after
