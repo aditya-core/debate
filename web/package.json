@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev -H 0.0.0.0 -p 3000",
-    "build": "NEXT_DIST_DIR=.next-build next build",
-    "start": "NEXT_DIST_DIR=.next-build next start -H 0.0.0.0 -p 3000",
+    "dev": "NEXT_DIST_DIR=.next-dev next dev -H 0.0.0.0 -p 3000",
+    "build": "next build",
+    "start": "next start -H 0.0.0.0 -p 3000",
     "typecheck": "tsc --noEmit",
     "audit:styles": "node scripts/audit-styles.mjs",
     "test": "node --experimental-strip-types --test scripts/*.test.mjs"

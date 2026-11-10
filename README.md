@@ -18,7 +18,7 @@ npm run dev      # http://localhost:3000
 Other commands:
 
 ```bash
-npm run build      # production build → .next-build
+npm run build      # production build → .next
 npm run typecheck  # tsc --noEmit
 npm test           # age + password rules (node:test)
 npm run audit:styles  # every class in every page must exist in its stylesheet
@@ -58,6 +58,7 @@ supabase/
 - `docs/ARCHITECTURE.md` — stack, capacity budgets, launch conditions
 - `docs/PROJECT-JOURNAL.md` — every decision, question, mistake and fix, append-only
 - `docs/SUPABASE-SETUP.md` — database setup, from empty project to verified sign-up
+- `docs/DEPLOY-VERCEL.md` — deployment, environment variables, first-run checks
 - `docs/SECURITY.md` — the working audit: fixed, accepted with reasons, still open
 - `SECURITY.md` — how to report a vulnerability
 

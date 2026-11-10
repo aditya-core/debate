@@ -60,9 +60,10 @@ if (SITE_ORIGIN) {
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  // Production builds go to .next-build so they can never clobber the
-  // dev server's .next directory (which silently serves a mismatched
-  // HTML/CSS pair — exactly the bug that broke the preview on 9 Nov).
+  // Development renders into its own directory (.next-dev, see the `dev`
+  // script) so a build can never clobber it — that collision is what served a
+  // mismatched HTML/CSS pair on 9 Nov. Production builds use the default .next
+  // because that is the directory Vercel expects to find.
   distDir: process.env.NEXT_DIST_DIR || ".next",
   // Allow the sandbox preview host to reach the dev server.
   allowedDevOrigins: ["*.e2b.app", "*.arena.ai", "*.e2b.dev"],

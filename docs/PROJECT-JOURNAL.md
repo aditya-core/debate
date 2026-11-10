@@ -728,3 +728,36 @@ which the verification step is theatre.
 
 **Still open:** the admin surface, the delete button, data export, audit logging,
 and a real pen test before launch. All tracked in `docs/SECURITY.md` §5.
+
+---
+
+### S-13 — 2026-11-09 — Making the build Vercel-shaped before Vercel sees it
+
+**Aditya's next step** is merging, cloning locally, then connecting Vercel and
+Supabase. One thing had to change first.
+
+**D-067: production builds go back to `.next`; development moves to `.next-dev`.**
+After S-08 the build wrote to `.next-build` to stop it colliding with the dev
+server. That was right for this sandbox and wrong for Vercel, which looks for
+`.next`. Rather than rely on Vercel honouring a custom `distDir`, the isolation
+moved to the side that actually needs it:
+
+| Script | Directory |
+| --- | --- |
+| `npm run dev` | `.next-dev` |
+| `npm run build` | `.next` (default, what Vercel expects) |
+| `npm start` | `.next` |
+
+The original guarantee holds — a dev server and a build can never write to the
+same place — and the default output directory is the one the platform looks for.
+
+**Also added:** `docs/DEPLOY-VERCEL.md`. Root directory `web`, the three `NEXT_PUBLIC_*`
+values (and why they must exist before the first build), the Supabase redirect URL,
+the post-deploy checklist, and the two things that will bite on the free tier:
+public preview URLs and no database backups.
+
+**Verified after the change:** build writes `.next` only; the preview restarted
+from that build; style audit 6/6 unchanged (324 / 196 / 147 / 154 / 136 / 130);
+all five routes 200; CSP still present on every response.
+
+**Not verified:** that Vercel builds it. Nobody has connected the repository yet.
