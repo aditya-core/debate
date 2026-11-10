@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/env";
+import { REQUIRE_EMAIL_CONFIRMATION } from "@/lib/auth/config";
 import {
   ADULT_AGE,
   MIN_AGE,
@@ -143,7 +144,7 @@ export async function signUpAction(
   const requiresGuardian = age < ADULT_AGE;
 
   const supabase = await createServerSupabase();
-  const { error } = await supabase.auth.signUp({
+  const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
@@ -202,6 +203,21 @@ export async function signUpAction(
       status: "error",
       message: "We couldn't create your account. Please try again.",
     };
+  }
+
+  // ---- signed in already? then Supabase has "Confirm email" turned off ----
+  //
+  // The session in the response is the honest signal, not our flag: it is what
+  // Supabase actually did. The flag only decides whether that is a problem
+  // worth shouting about. See lib/auth/config.ts (D-077).
+  if (data.session) {
+    if (REQUIRE_EMAIL_CONFIRMATION) {
+      console.warn(
+        "[signup] REQUIRE_EMAIL_CONFIRMATION is on but Supabase returned a session. " +
+          "Turn on 'Confirm email' in Authentication → Sign In / Providers → Email.",
+      );
+    }
+    redirect("/onboarding");
   }
 
   redirect(`/signup/check-email?email=${encodeURIComponent(email)}&guardian=${requiresGuardian ? "1" : "0"}`);

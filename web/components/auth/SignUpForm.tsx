@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useActionState, useMemo, useState } from "react";
 import { INITIAL_STATE, signUpAction } from "@/lib/auth/actions";
+import { REQUIRE_EMAIL_CONFIRMATION } from "@/lib/auth/config";
 import {
   ADULT_AGE,
   MIN_AGE,
@@ -205,6 +206,16 @@ export default function SignUpForm() {
         {pending ? "Creating your account…" : "Create my account"}
         {!pending && <span aria-hidden="true">↗</span>}
       </button>
+
+      {REQUIRE_EMAIL_CONFIRMATION ? null : (
+        <p className="rounded-xl border border-line bg-surface-2 px-3.5 py-2.5 text-[0.74rem] leading-relaxed text-muted">
+          <span className="font-display uppercase tracking-[0.12em] text-faint">
+            While we build:
+          </span>{" "}
+          email verification is switched off, so you&apos;ll go straight into
+          setup. It turns on before anyone outside the team can register.
+        </p>
+      )}
 
       <p className="pt-1 text-center text-[0.78rem] text-faint">
         Already have an account?{" "}

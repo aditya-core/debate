@@ -989,3 +989,43 @@ before it shipped; token added to `@theme inline`.
 there is still no project. The wizard's actual appearance has not been seen in a
 browser; no headless browser exists in this sandbox. Both need Aditya's machine
 and the Supabase project.
+
+---
+
+### S-19 — 2026-11-10 — Verification paused, not removed
+
+**Aditya's instruction:** keep the email verification system, but on halt — turn
+it on when he says. Procced with the rest.
+
+**D-077 — one flag, two switches, and the session is the truth.**
+`web/lib/auth/config.ts` holds `REQUIRE_EMAIL_CONFIRMATION`, off by default and
+overridable with `NEXT_PUBLIC_REQUIRE_EMAIL_CONFIRMATION=true`. Nothing was
+deleted: the callback route, the check-email page and the confirmation
+`emailRedirectTo` all still exist.
+
+The important design choice: the sign-up action does not believe the flag, it
+believes Supabase. If the response carries a session, "Confirm email" is off in
+the dashboard and the learner goes to `/onboarding`; if it carries none, a mail
+is on its way and they go to `/signup/check-email`. The flag only decides
+whether that state is a problem worth shouting about — and if the two disagree
+(flag on, Supabase still off) the action logs a warning instead of quietly
+letting unverified accounts through.
+
+Two switches, both required to verify: the flag and the dashboard toggle. Doing
+one is how you end up with a "verified" account that never saw a mail.
+
+**Cost of the pause, written down rather than assumed:** anyone can register an
+address they don't own. Acceptable while the only accounts are ours, unacceptable
+at launch. A-08 in `docs/SECURITY.md` now says exactly that, and `/signup` shows
+a visible "While we build: email verification is switched off" note so the state
+is never a surprise.
+
+**Verified**
+- Flag `true` → the note is absent from `/signup`; flag `false` → present. Two
+  production builds, checked over HTTP both ways.
+- Build clean, style audit 7/7, `npm test` 7/7, `tsc` clean, 224 class tokens in
+  the new surfaces all resolve.
+
+**Not verified:** the sign-up *branch* itself has not run against a live project
+(there is still no database), so "session returned → /onboarding" is proven by
+reading the code and by the two build-time states, not by an observed signup.

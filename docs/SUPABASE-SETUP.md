@@ -153,51 +153,53 @@ of a confirmation link that lands on a blank page.
 
 ---
 
-## 5. Email — this is now on the critical path
+## 5. Email — built, paused (D-077)
 
-Verification is **compulsory**: sign-up sends a confirmation mail, the link
-returns to `/auth/callback`, and only a confirmed session reaches the setup
-wizard. That means the mail sender decides whether anyone can register at all.
+Verification is **switched off on purpose** while we build. Sign-up returns a
+session immediately and drops the learner straight into `/onboarding`, and
+`/signup` says so on the page rather than pretending a mail is coming.
 
-The built-in sender cannot do this. It allows **2 messages per hour, and only to
-members of your Supabase organisation** — fine for testing your own address,
-useless for real users (tracked as Q-016). If you sign up with any other address
-you will see, in the server log:
+What that costs: an account can be created with an address nobody has proven
+they own. Fine while the only accounts are ours; not fine for launch. Recorded
+as an accepted risk (`docs/SECURITY.md`, A-08).
+
+### Turning it back on — two switches, both required
+
+1. **Environment:** `NEXT_PUBLIC_REQUIRE_EMAIL_CONFIRMATION=true`
+   (or set `REQUIRE_EMAIL_CONFIRMATION = true` in `web/lib/auth/config.ts`).
+2. **Supabase** → Authentication → Sign In / Providers → Email →
+   **Confirm email ON**, with a working SMTP sender — see below.
+
+If they disagree, the sign-up action logs a warning rather than guessing:
 
 ```
-[signup] supabase signUp failed: email_send_failed Error sending confirmation email
+[signup] REQUIRE_EMAIL_CONFIRMATION is on but Supabase returned a session.
 ```
 
-and on screen a message saying our sender isn't configured. That is the correct
-behaviour: we did not create a half-registered account.
+The switch in code only controls *what we say and where we send people*. The
+switch in Supabase controls whether a session exists at all.
 
-### Free sender options
+### The sender
 
-| Provider | Free allowance | Needs a domain? |
-|---|---|---|
-| **Brevo** | 300 emails/day | No — verify a single sender address |
-| **Gmail SMTP** | ~500/day | No — needs 2-Step Verification + an App Password |
-| **Resend** | 100/day | Yes, to send to anyone but yourself |
+The built-in sender allows **2 messages per hour, and only to members of your
+Supabase organisation** — useless for real users (Q-016). Free options that do
+not need a domain:
 
-### Configure it
+| Provider | Free allowance |
+|---|---|
+| **Brevo** | 300/day — verify a single sender address |
+| **Gmail SMTP** | ~500/day — 2-Step Verification + App Password |
+| **Resend** | 100/day — needs a verified domain |
 
 Authentication → **Emails → SMTP Settings → Enable custom SMTP**:
 
-- **Brevo:** host `smtp-relay.brevo.com`, port `587`, username is your Brevo
-  login, password is the SMTP key from Brevo → SMTP & API.
-- **Gmail:** host `smtp.gmail.com`, port `587`, username is the full address,
-  password is the 16-character App Password (spaces removed).
+- **Brevo:** `smtp-relay.brevo.com`, port `587`, username = Brevo login,
+  password = SMTP key.
+- **Gmail:** `smtp.gmail.com`, port `587`, username = full address, password =
+  16-character App Password (spaces removed).
 
-Then set **Sender email** to the address you verified, leave **Confirm email**
-**ON**, and send one real sign-up to yourself.
-
-### While testing without a sender
-
-Authentication → Sign In / Providers → Email → **Confirm email** off. Sign-up
-then returns a session immediately and lands on `/onboarding` — the wizard still
-runs, so you can test everything except the mail hop. Turn it back on before
-anyone else gets the link; with it off, "verified email" is a claim we cannot
-make.
+Then set **Sender email** to the address you verified and send yourself one real
+sign-up.
 
 ## 6. Restart and verify
 
@@ -214,8 +216,8 @@ Checklist:
 2. Submit an empty form → field errors, nothing posted.
 3. Submit with a date of birth under 18 → guardian field appears, and the
    account lands as *Pending approval*.
-4. Submit valid adult details → confirmation email → link →
-   **`/onboarding`**, not `/account`.
+4. Submit valid adult details → **straight to `/onboarding`** while verification
+   is paused (with verification on: confirmation email → link → `/onboarding`).
 5. The wizard will not let you past step 1 without a goal, and has no link back
    to the site — only sign-out. That is deliberate.
 6. Finish setup → `/account` with a "Setup complete" banner, the summary of what
