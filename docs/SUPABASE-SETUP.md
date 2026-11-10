@@ -204,8 +204,18 @@ Brevo lets you verify a single sender address and send from it, 300 a day, free.
 
 ### Getting a Brevo key (5 minutes, free, no domain)
 
-1. Sign up at brevo.com → **SMTP & API → API Keys → Generate a new API key**
-   (an `xkeysib-…` v3 key).
+1. Sign up at brevo.com → **SMTP & API → API Keys tab → Generate a new API key**
+   — you want an **`xkeysib-…`** key.
+
+   Brevo keeps two secrets on adjacent tabs and they look alike:
+
+   | Prefix | What it is | Where |
+   |---|---|---|
+   | `xkeysib-…` | API v3 key — **what we need** | SMTP & API → **API Keys** |
+   | `xsmtpsib-…` | SMTP password | SMTP & API → **SMTP** |
+
+   Pasting the SMTP password returns a 401 that reads like an outage.
+   `npm run doctor` now names this outright.
 2. **Senders & Domains → Add a sender** — your own Gmail address. Brevo emails a
    verification link; click it.
 3. Put that address in `EMAIL_FROM` — it must match exactly, or Brevo rejects the

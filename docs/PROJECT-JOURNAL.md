@@ -1200,3 +1200,38 @@ learner get a friendly sentence.
 **Still not fixed by code, by design:** the dashboard toggle itself. No amount of
 application code can make Supabase hand back a session it has been told not to
 give. The app can only say so clearly — which it now does in three places.
+
+---
+
+### S-23 — 2026-11-10 — The key on the wrong tab
+
+Aditya ran `npm run doctor` and pasted the output. Everything looked healthy —
+Supabase URL, anon key, `mailer_autoconfirm true` — except one line:
+
+```
+Brevo API key    xsmtpsib-aee…
+```
+
+`xsmtpsib-` is Brevo's **SMTP password**, not its API key. We post to
+`api.brevo.com/v3/smtp/email`, which wants `xkeysib-`. With the SMTP password he
+would have received a 401 and concluded, for a third time, that Brevo was broken.
+
+**D-084 — validate the shape of a secret where it is used.**
+Keys have prefixes for a reason: they are self-describing. `doctor` now grades
+the key (`xkeysib-` ✓, `xsmtpsib-` ✗ with the two-tab explanation, anything else
+✗ unrecognised) and `lib/email/send.ts` refuses to call the API with a key that
+cannot work, logging the same instruction instead of burning a request.
+
+Also added: mode `off` with a key present now says the key is unused, rather than
+looking like a green light.
+
+**Verified**
+- Case C — the exact state from his terminal (mode `off`, `xsmtpsib-` key):
+  exits **1**, names the tab, and separately notes the mode is off.
+- Case D — mode `otp` with an `xkeysib-` key: exits **0**,
+  "Configuration looks right".
+- Build clean, audit 7/7, tests 7/7 + guard, `tsc` clean.
+
+**The remaining gap is his to close, and it is two lines:** set
+`NEXT_PUBLIC_EMAIL_VERIFICATION_MODE=otp`, and swap the SMTP password for the
+API key from the **API Keys** tab.

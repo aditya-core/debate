@@ -74,6 +74,17 @@ export async function sendVerificationCode({
     return { ok: false, reason: "no-sender" };
   }
 
+  // Brevo has two secrets on two pages: xkeysib-… is the API v3 key we need,
+  // xsmtpsib-… is the SMTP password. Pasting the wrong one yields a 401 that
+  // reads like an outage, so name it here instead.
+  if (!apiKey.startsWith("xkeysib-")) {
+    console.error(
+      "[email] BREVO_API_KEY does not look like a v3 API key (expected xkeysib-…). " +
+        "An SMTP password (xsmtpsib-…) comes from a different tab in Brevo and will be rejected.",
+    );
+    return { ok: false, reason: "provider-error", detail: "wrong-key-type" };
+  }
+
   const payload = body(code, name);
 
   try {

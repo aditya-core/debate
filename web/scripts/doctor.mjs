@@ -66,7 +66,15 @@ line(
 );
 line("Anon key", anon ? `${anon.slice(0, 12)}… (${anon.length} chars)` : "(missing)", anon.length > 20);
 line("Verification mode", mode, undefined);
-line("Brevo API key", brevoKey ? `${brevoKey.slice(0, 12)}…` : "(missing — dev prints the code)", undefined);
+const keyShape = !brevoKey
+  ? { ok: undefined, note: "(missing — dev prints the code)" }
+  : brevoKey.startsWith("xkeysib-")
+    ? { ok: true, note: `${brevoKey.slice(0, 12)}… (v3 API key)` }
+    : brevoKey.startsWith("xsmtpsib-")
+      ? { ok: false, note: `${brevoKey.slice(0, 12)}… ✗ this is an SMTP password, not an API key` }
+      : { ok: false, note: `${brevoKey.slice(0, 12)}… ✗ unrecognised — should start xkeysib-` };
+
+line("Brevo API key", keyShape.note, keyShape.ok);
 line("EMAIL_FROM", from || "(missing)", undefined);
 
 /* ------------------------------------------------------- 2. what Supabase does */
@@ -120,6 +128,38 @@ if (mode === "otp" && !autoconfirm) {
       "",
       "    Fix: Supabase → Authentication → Sign In / Providers → Email →",
       "         turn Confirm email OFF, then Save, then restart the dev server.",
+      "",
+    ].join("\n"),
+  );
+}
+
+if (brevoKey && !brevoKey.startsWith("xkeysib-")) {
+  problems++;
+  console.log(
+    [
+      "",
+      "  ✗ BREVO_API_KEY is not an API key.",
+      "",
+      "    Brevo has two secrets on two different pages, and they are easy to",
+      "    mix up:",
+      "",
+      "      xkeysib-…    API v3 key      → Settings → SMTP & API → API Keys",
+      "      xsmtpsib-…   SMTP password   → SMTP & API → SMTP tab",
+      "",
+      "    We send over the HTTP API, so it must be the xkeysib- one. An SMTP",
+      "    password here produces a 401 and no mail.",
+      "",
+    ].join("\n"),
+  );
+}
+
+if (mode === "off" && brevoKey) {
+  console.log(
+    [
+      "",
+      "  · Mode is 'off', so the key is unused — sign-up makes no mail at all.",
+      "    Set NEXT_PUBLIC_EMAIL_VERIFICATION_MODE=otp (then restart the dev",
+      "    server) when you want the six-digit step.",
       "",
     ].join("\n"),
   );
