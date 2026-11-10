@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import Wizard from "@/components/onboarding/Wizard";
-import { getAccountContext, hasOnboarded } from "@/lib/auth/guard";
+import { getAccountContext, hasOnboarded, hasVerified } from "@/lib/auth/guard";
 import { isSupabaseConfigured } from "@/lib/env";
 import type { OnboardingAnswers } from "@/lib/onboarding/schema";
 
@@ -67,6 +67,8 @@ export default async function OnboardingPage({
       </div>
     );
   }
+
+  if (!hasVerified(ctx)) redirect("/verify");
 
   // Already done and not deliberately editing: the wizard is not a place to
   // browse, it is a gate that has been passed.

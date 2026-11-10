@@ -1093,3 +1093,68 @@ complaining about.
 with Supabase — there is no project yet. The submit path is now *legal* code
 that reaches Supabase; whether the account is created depends on the migrations
 and on "Confirm email" being off (D-077).
+
+---
+
+### S-21 — 2026-11-10 — Six digits instead of a link
+
+**Aditya's proposition:** verify by a 6-digit OTP the backend generates, stores for
+ten minutes, self-destructs on use, with a 2-minute resend — "then we might not
+need those smtp configs".
+
+**The correction, made before any code:** an OTP still has to reach an inbox. What
+it removes is the *link* — the redirect allowlist, the deep link, the expiry
+between devices. And no domain is needed either way: Brevo verifies a single
+sender address and sends from it, 300/day free. So the build went ahead, with
+delivery through Brevo's HTTP API.
+
+**D-078 — a code, not a link.**
+No redirect URL to misconfigure, no deep link mangled by an in-app browser, and it
+can be typed on the device that is being registered. Those are the three most
+common ways a magic link fails on a phone.
+
+**D-079 — the code is a secret, treated as one.**
+Generated inside Postgres, stored as a **bcrypt hash**, one live code per account
+(partial unique index), ten minutes to live, five attempts, deleted on success or
+replacement. The 120-second resend cooldown lives in SQL, not in the disabled
+state of a button — a UI is advisory; a function is not.
+
+**D-080 — the plain code never reaches the browser.**
+`issue_email_otp()` returns it to the server action that mails it. The client only
+ever posts six digits back. There is no endpoint that can be made to reveal a
+pending code.
+
+**D-081 — delivery is swappable, development is loud.**
+`lib/email/send.ts` posts to Brevo when `BREVO_API_KEY` and `EMAIL_FROM` exist; in
+development without them it prints the code to the server console and the page
+says so in a yellow strip. In production without them it logs an error and the
+page says the sender isn't configured. Silent failure would look exactly like "the
+email never arrived" — the least debuggable state there is.
+
+**D-082 — the gates are now ordered: verified → onboarded.**
+`/account`, `/onboarding` and the sign-in/callback redirects all check
+`email_verified_at` first, then `completed_at`. Turning verification off (default)
+makes the first check a no-op, so the pause from D-077 still works.
+
+**M-028 — `shadow-lift` was never a class.**
+`--shadow-lift` exists as a CSS variable and is used by `.card`, but the utility
+`shadow-lift` was never generated, so the new card would have had no shadow. The
+render audit caught it, the same way it caught `border-line-strong` (M-024). Fixed
+with an `.elevated` class that uses the variable, so it still follows light/dark.
+
+**Verified**
+- `/verify` renders in a temporary harness with fixed props: **6 digit inputs**,
+  **93 rendered classes, 0 missing** from the compiled stylesheet, and the
+  success-branch classes (`bg-mint/12`, `otp-ring`, `otp-check`, `otp-progress`,
+  the mint→sky→mint gradient) all present too.
+- All five keyframes compiled; a `prefers-reduced-motion` block switches every one
+  of them off.
+- The harness was **deleted before commit** — no unauthenticated preview route
+  ships.
+- Build clean (**13 routes**), style audit 7/7, `npm test` 7/7 + the "use server"
+  guard, `tsc` clean.
+
+**Not verified — and this is the important part.** None of the SQL has run: no
+`issue_email_otp`, no `verify_email_otp`, no bcrypt round-trip. Brevo has never
+been called. The tick → `/onboarding` transition has never been seen in a browser.
+All four need the project and a real sign-up.

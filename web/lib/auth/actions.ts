@@ -5,7 +5,8 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/env";
-import { REQUIRE_EMAIL_CONFIRMATION } from "@/lib/auth/config";
+import { VERIFICATION_ENABLED } from "@/lib/auth/config";
+import { issueVerificationCode } from "@/lib/auth/otp";
 import {
   ADULT_AGE,
   MIN_AGE,
@@ -204,13 +205,25 @@ export async function signUpAction(
   // Supabase actually did. The flag only decides whether that is a problem
   // worth shouting about. See lib/auth/config.ts (D-077).
   if (data.session) {
-    if (REQUIRE_EMAIL_CONFIRMATION) {
-      console.warn(
-        "[signup] REQUIRE_EMAIL_CONFIRMATION is on but Supabase returned a session. " +
-          "Turn on 'Confirm email' in Authentication → Sign In / Providers → Email.",
-      );
+    // Our own six-digit code, generated in Postgres and mailed by us (0005).
+    // Supabase's own confirmation must stay OFF in this mode — otherwise the
+    // learner gets two verifications and we send the wrong mail.
+    if (VERIFICATION_ENABLED) {
+      const issued = await issueVerificationCode();
+      if (issued.error) {
+        console.error("[signup] could not deliver verification code:", issued.error);
+      }
+      redirect("/verify");
     }
     redirect("/onboarding");
+  }
+
+  // No session means Supabase is still sending its own confirmation link.
+  if (VERIFICATION_ENABLED) {
+    console.warn(
+      "[signup] EMAIL_VERIFICATION_MODE is 'otp' but Supabase returned no session. " +
+        "Turn 'Confirm email' OFF — we send the code ourselves.",
+    );
   }
 
   redirect(`/signup/check-email?email=${encodeURIComponent(email)}&guardian=${requiresGuardian ? "1" : "0"}`);

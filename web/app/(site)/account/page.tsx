@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { isSupabaseConfigured } from "@/lib/env";
+import { VERIFICATION_ENABLED } from "@/lib/auth/config";
 import { createServerSupabase, getSessionUser } from "@/lib/supabase/server";
 import {
   EXPERIENCE_LABELS,
@@ -26,6 +27,7 @@ type AccountRow = {
   full_name: string | null;
   status: "active" | "pending_guardian_consent" | "suspended";
   created_at: string;
+  email_verified_at: string | null;
 };
 
 type LearnerRow = {
@@ -67,7 +69,7 @@ export default async function AccountPage({
   const supabase = await createServerSupabase();
   const { data: account } = await supabase
     .from("accounts")
-    .select("id, display_id, email, full_name, status, created_at")
+    .select("id, display_id, email, full_name, status, created_at, email_verified_at")
     .eq("auth_user_id", user.id)
     .maybeSingle<AccountRow>();
 
@@ -79,6 +81,9 @@ export default async function AccountPage({
       />
     );
   }
+
+  // Verification comes before setup when the OTP hop is switched on.
+  if (VERIFICATION_ENABLED && !account.email_verified_at) redirect("/verify");
 
   // Onboarding is compulsory. Anyone who slipped past the wizard is sent back
   // to it here, on the server, before this page renders a single byte.

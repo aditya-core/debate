@@ -67,7 +67,7 @@ These cannot be fixed from this repository.
 | A-05 | **Protect preview deployments** in Vercel. | Previews are public URLs. Before launch, they should need a login. |
 | A-06 | **Schedule a `pg_dump`.** | The free tier has **no backups**. One bad migration and the first cohort is gone. A nightly dump to storage we control costs nothing. |
 | A-07 | **Decide session lifetime.** Supabase's refresh cookie currently lives up to 400 days. | Long-lived sessions on shared school devices are a risk. 30 days is a defensible default for this product. |
-| A-08 | **Email verification is paused** (D-077), and there is no SMTP sender (Q-016). | The code path is complete and releasable by one flag plus the dashboard toggle, but as it stands an account can be created with an address nobody has proven they own. Accepted only while the users are us. Must be on before a public launch. |
+| A-08 | **Email verification currently off** (D-077), and no sender configured (Q-016). | The six-digit system is built and tested (0005): bcrypt-hashed codes, one live code per account, 10-minute expiry, 5 attempts, SQL-enforced 120s resend cooldown, no client access to the table. It activates with `NEXT_PUBLIC_EMAIL_VERIFICATION_MODE=otp` plus a Brevo key. Until then, an account can be created with an unproven address — acceptable only while the users are us. |
 
 ---
 
