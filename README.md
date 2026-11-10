@@ -9,6 +9,11 @@ An intelligent communication training experience — two independent practice wo
 
 ## Run it
 
+**Node 22.12 or newer** (or 20.19+). Tailwind 4 depends on an ESM-only package
+that `@tailwindcss/node` loads with `require()`, which Node only allows from
+22.12 onward. `npm install` now refuses to run on an older version rather than
+letting the build fail with a cryptic message.
+
 ```bash
 cd web
 npm install
