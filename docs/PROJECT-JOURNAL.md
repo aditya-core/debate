@@ -832,3 +832,27 @@ immediately with *"Unsupported engine"* instead of surfacing as a build error.
 `engine-strict` on; build clean; style audit 6/6; 7/7 tests; `tsc` clean.
 
 **Not verified:** that his machine is now on 22.12+. He has to run `node -v`.
+
+---
+
+### S-16 — 2026-11-10 — A guard that says the real problem
+
+Aditya hit the same Tailwind/ESM error again after installing dependencies. The
+tell was in the first line of his output: *"Node.js 20 and below are deprecated"*
+from `@supabase/supabase-js`. He was still on Node 20 — the engines field added in
+S-15 only fires on `npm install`, and `npm run dev` never mentions it, so the
+failure came back as a 60-line CSS stack trace.
+
+**D-068 — the runtime check runs before the commands people actually type.**
+`scripts/check-node.mjs` now runs as `predev`, `prebuild` and at the head of
+`npm test`. On an old runtime it prints the version, the requirement, why the
+error looks like a CSS problem, and the exact upgrade commands for Windows and
+macOS/Linux — then exits. Exit 0 on 22.22.3; exit 1 with the message when the
+version is faked down to 20.11.1.
+
+Also: `audit:styles` used to crash with a raw stack trace when the server was not
+running. It now says "Could not reach http://localhost:3000 — start the server
+first", which is the only thing anyone needs at that moment.
+
+**Verified:** build clean, 7/7 tests, style audit 6/6, `tsc` clean, guard exits
+correctly in both directions.

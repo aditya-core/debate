@@ -36,7 +36,16 @@ function escapeClass(token) {
 }
 
 async function fetchText(url) {
-  const res = await fetch(url);
+  let res;
+  try {
+    res = await fetch(url);
+  } catch {
+    console.error(
+      `\nCould not reach ${BASE}.\n` +
+        `Start the server first:  npm run build && npm start   (or npm run dev)\n`,
+    );
+    process.exit(1);
+  }
   if (!res.ok) throw new Error(`${res.status} ${url}`);
   return res.text();
 }
