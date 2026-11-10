@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useActionState, useMemo, useState } from "react";
-import { INITIAL_STATE, signUpAction } from "@/lib/auth/actions";
+import { signUpAction } from "@/lib/auth/actions";
+import { INITIAL_STATE } from "@/lib/auth/state";
 import { REQUIRE_EMAIL_CONFIRMATION } from "@/lib/auth/config";
 import {
   ADULT_AGE,

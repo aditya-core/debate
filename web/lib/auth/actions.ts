@@ -13,14 +13,7 @@ import {
   passwordsMatch,
 } from "@/lib/auth/validation";
 
-export type AuthState = {
-  status: "idle" | "error" | "success";
-  message?: string;
-  fieldErrors?: Partial<Record<string, string>>;
-};
-
-export const INITIAL_STATE: AuthState = { status: "idle" };
-
+import type { AuthState } from "@/lib/auth/state";
 async function origin() {
   const h = await headers();
   const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";

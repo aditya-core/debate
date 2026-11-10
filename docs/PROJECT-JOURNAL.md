@@ -1029,3 +1029,67 @@ is never a surprise.
 **Not verified:** the sign-up *branch* itself has not run against a live project
 (there is still no database), so "session returned → /onboarding" is proven by
 reading the code and by the two build-time states, not by an observed signup.
+
+---
+
+### S-20 — 2026-11-10 — The sign-up button, three errors, one real bug
+
+Aditya submitted the sign-up form and got three errors. Only one of them was
+stopping him; the other two were noise that made the real one hard to see.
+
+**M-025 — the actual bug: `"use server"` exported a value.**
+`lib/auth/actions.ts` declared `INITIAL_STATE` and exported it. A module marked
+`"use server"` may export **only async functions**, and the violation throws at
+runtime — not at build, not at typecheck:
+
+```
+A "use server" file can only export async functions, found object.
+```
+
+Every sign-up attempt died there, which also explains the earlier "error" with
+no message. Nothing was wrong with Supabase, the trigger or the mail.
+
+Fixed by moving the state into `lib/auth/state.ts` and
+`lib/onboarding/state.ts`; types were never the problem (they are erased), the
+object was. Four form components now import from the state module.
+
+**M-026 — CSP blocked `eval()` in development.**
+React only uses `eval` in dev, to rebuild call stacks across the server/client
+boundary. Our CSP applied production rules to dev, so the console shouted about
+it. `script-src` now adds `'unsafe-eval'` **only when
+`NODE_ENV === "development"`**; the production header is byte-identical to
+before, because React never needs it there.
+
+**M-027 — a hydration mismatch that was partly not ours.**
+`Waveform` was already seeded (no `Math.random`), but its style values were raw
+doubles: the server and the browser stringified `0.48146999314631106` and
+`0.48146999314230926` differently at the fourteenth decimal, and React reported
+a mismatch. Heights are now integers and custom properties are `toFixed(4)`, so
+both sides produce identical strings.
+
+The other half of that diff — `data-new-gr-c-s-check-loaded` and
+`data-gr-ext-installed` on `<body>` — is **Grammarly**, which mutates the DOM
+before React hydrates. Not ours, and not fixable from this codebase.
+
+**Guard, so M-025 cannot come back.** `web/scripts/check-server-actions.mjs`
+walks `app/`, `components/` and `lib/`, and fails if a `"use server"` module
+exports anything but async functions. It is wired into `npm test`. Verified both
+ways: a planted `export const BAD` fails it with the file and export named; the
+clean tree passes.
+
+**Also:** Next 16.4.5 → **16.4.6**, which is what the "(stale)" banner was
+complaining about.
+
+**Verified**
+- Production CSP: `script-src 'self' 'unsafe-inline'` — no `unsafe-eval`.
+- Development CSP: `script-src 'self' 'unsafe-inline' 'unsafe-eval'`.
+- `next dev` on :3001 — `/signup` returns 200, dev log clean, zero occurrences of
+  the "only export async functions" message.
+- Waveform on the server: heights `28% / 85% / 32%`, every `--hi` exactly 4
+  decimal places.
+- Build clean, `npm test` 7/7 plus the new guard, `tsc --noEmit` clean.
+
+**Not verified:** the sign-up action has still never exchanged a real request
+with Supabase — there is no project yet. The submit path is now *legal* code
+that reaches Supabase; whether the account is created depends on the migrations
+and on "Confirm email" being off (D-077).

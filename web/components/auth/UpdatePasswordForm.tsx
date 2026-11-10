@@ -1,7 +1,8 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { INITIAL_STATE, updatePasswordAction } from "@/lib/auth/actions";
+import { updatePasswordAction } from "@/lib/auth/actions";
+import { INITIAL_STATE } from "@/lib/auth/state";
 
 export default function UpdatePasswordForm() {
   const [state, formAction, pending] = useActionState(updatePasswordAction, INITIAL_STATE);
