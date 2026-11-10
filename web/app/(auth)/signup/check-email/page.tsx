@@ -19,7 +19,7 @@ export default async function CheckEmailPage({
   return (
     <AuthShell
       title="Check your inbox"
-      subtitle="We've sent a confirmation link to finish setting up your account."
+      subtitle="If this address can be used, a confirmation link is on its way."
       footer={
         <p className="text-center text-[0.78rem] text-faint">
           Wrong address?{" "}

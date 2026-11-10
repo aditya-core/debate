@@ -607,6 +607,17 @@ html:not([data-js]) .spark-line {
    both cheap on a low-end phone.
 ================================================================== */
 
+/* --- form honeypot -------------------------------------------------
+   Off-screen rather than display:none — some bots skip fields that are
+   not rendered. Hidden from assistive tech by aria-hidden and tabindex. */
+.hp-field {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
 /* --- scroll progress hairline ------------------------------------- */
 .scroll-progress {
   position: fixed;

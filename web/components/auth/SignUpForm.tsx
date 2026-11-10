@@ -28,6 +28,12 @@ export default function SignUpForm() {
 
   return (
     <form action={formAction} className="space-y-4" noValidate>
+      {/* Honeypot: hidden from people, irresistible to naive bots. */}
+      <div className="hp-field" aria-hidden="true">
+        <label htmlFor="company">Company</label>
+        <input id="company" name="company" type="text" tabIndex={-1} autoComplete="off" />
+      </div>
+
       {state.status === "error" && state.message ? (
         <div
           role="alert"

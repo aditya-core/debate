@@ -650,3 +650,81 @@ descender of "words." Those are judgements for a screen, not for a terminal.
   data rather than more invented numbers.
 - Back-to-top ring, FAQ and pricing sections exist in their build; ours need copy
   decisions (Q-024) before they are worth building.
+
+---
+
+### S-12 — 2026-11-09 — Security pass: what was actually broken
+
+**Aditya asked** whether we had checked for data leakage, server-side admin
+control, and everything else a platform holding minors' data should worry about.
+The honest answer was no — there had been care in specific places and no pass
+whose only job was to attack the thing. This is that pass. Full report:
+**`docs/SECURITY.md`**.
+
+**The serious one (S-02).** `@supabase/ssr` defaults session cookies to
+`httpOnly: false`, because its browser client reads the session from
+`document.cookie`. We inherited that default without looking. It meant any XSS —
+ours or a dependency's — yields a session. Since every auth operation here is
+server-side, the browser never needed to read that cookie, so it is now
+`httpOnly`, `SameSite=Lax`, and `secure` in production, set in **both**
+`lib/supabase/server.ts` and `proxy.ts` (the refresh in the proxy is the write
+that matters). The unused browser client was deleted rather than left as a trap.
+
+**No headers at all (S-01).** The site could be framed — a login form inside an
+attacker's iframe is clickjacking with extra steps. There is now a CSP plus
+`nosniff`, `Referrer-Policy`, `Permissions-Policy`, COOP, and HSTS on a real
+origin. `frame-ancestors` lists the platform hosts until `NEXT_PUBLIC_SITE_URL`
+is set, at which point it collapses to `'none'`; that switch is what keeps the
+preview embeddable and production not.
+
+**D-064: CSP allows `'unsafe-inline'` for scripts and styles — deliberately.**
+Next injects inline bootstrap scripts and this codebase sets inline style
+objects. A policy without it breaks hydration on every page. The nonce upgrade
+needs `headers()` in the root layout, which forces every route dynamic — a bad
+trade for a site that is static, escapes all input, and loads no third-party
+code. The policy still forbids other origins, `<base>` injection, off-site form
+posts, plugins and framing.
+
+**D-065: sign-up is no longer an oracle (S-03).** It used to answer "that email
+is already registered". On a platform where an account quietly reveals that a
+named teenager is studying here, that is a privacy leak dressed as helpfulness.
+It now redirects to the same screen a new sign-up reaches, and the screen says
+"If this address can be used, a confirmation link is on its way." The cost is
+real: someone who forgot they had an account waits for a mail that will not come.
+The sign-in link is directly below.
+
+**Consent tokens (S-04, S-05).** They were `md5(uuid)` — not a hash of a secret,
+just a scrambled identifier. Now 32 bytes from `pgcrypto`, stored as SHA-256. And
+the consent row is no longer client-readable: when the approval flow is built, a
+minor reading their own token and approving themselves would have been trivial.
+The app never needed that read.
+
+**D-066: admin control is deliberately absent, and that is the safe state.**
+Nothing in this app can administer anything, because nothing holds the
+service-role key — the one credential that ignores RLS. Today, control means the
+Supabase dashboard. When an admin panel is built it must be a **separate
+deployment** with the key in server-only env, an `admins` table checked on every
+request, and an append-only audit log. Putting an admin panel into the app users
+load is how this class of product gets owned.
+
+**Also fixed:** internal functions were executable by every role (Postgres grants
+`EXECUTE` to `PUBLIC` by default) — revoked; a honeypot on sign-up, off-screen and
+`aria-hidden`, which returns the success screen and creates nothing; `X-Powered-By`
+off; `delete_my_account()` added for DPDP erasure (SECURITY DEFINER, deletes only
+`auth.uid()`, everything cascades — **SQL only, no button yet**); Dependabot and a
+disclosure policy.
+
+**Verified:** CSP, `nosniff`, `Referrer-Policy`, `Permissions-Policy` and COOP
+present on `/`, `/signup`, `/account` **and** static assets; `X-Powered-By` gone;
+`/account` still `no-store`; `npm audit --omit=dev` 0 vulnerabilities; no secrets
+in git history; 7/7 tests; build clean; style audit 6/6 (signup 154, +1 for the
+honeypot).
+
+**Not fixed, because it needs him:** CAPTCHA (Turnstile, free) and Supabase rate
+limits — the only real brute-force and spam defence we get on this budget; leaked
+password protection (one toggle); preview deployment protection; a nightly
+`pg_dump`, since the free tier has **no backups**; and the email provider, without
+which the verification step is theatre.
+
+**Still open:** the admin surface, the delete button, data export, audit logging,
+and a real pen test before launch. All tracked in `docs/SECURITY.md` §5.

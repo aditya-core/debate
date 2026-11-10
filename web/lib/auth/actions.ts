@@ -111,6 +111,13 @@ export async function signUpAction(
     };
   }
 
+  // Honeypot: a field no human can see. Anything in it means a bot filled the
+  // form, so we return the same destination a real sign-up gets and create
+  // nothing. Silent by design — telling a bot it failed just teaches it.
+  if (String(formData.get("company") ?? "").trim() !== "") {
+    redirect("/signup/check-email");
+  }
+
   const raw = {
     fullName: String(formData.get("fullName") ?? ""),
     email: String(formData.get("email") ?? ""),
@@ -158,10 +165,11 @@ export async function signUpAction(
   if (error) {
     const message = error.message.toLowerCase();
     if (message.includes("already registered") || message.includes("already exists")) {
-      return {
-        status: "error",
-        message: "That email is already registered. Try signing in instead.",
-      };
+      // Deliberate: the same destination a new sign-up gets. A different
+      // response here would turn the form into an oracle for "does this person
+      // have an account?", which is exactly what nobody wants on a platform
+      // holding minors' data.
+      redirect(`/signup/check-email?email=${encodeURIComponent(email)}`);
     }
     if (error.status === 429) {
       return {

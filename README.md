@@ -58,6 +58,8 @@ supabase/
 - `docs/ARCHITECTURE.md` — stack, capacity budgets, launch conditions
 - `docs/PROJECT-JOURNAL.md` — every decision, question, mistake and fix, append-only
 - `docs/SUPABASE-SETUP.md` — database setup, from empty project to verified sign-up
+- `docs/SECURITY.md` — the working audit: fixed, accepted with reasons, still open
+- `SECURITY.md` — how to report a vulnerability
 
 Every commit references the decision IDs it implements.
 
@@ -76,6 +78,8 @@ Every commit references the decision IDs it implements.
 - **No dead links.** Unbuilt features are labelled "soon" rather than linked to nowhere.
 - **Row Level Security on every table**, and no service-role key anywhere in the app.
   Clients read their own rows and write nothing; privileged work happens in Postgres.
+- **httpOnly session cookies, a CSP, and no third-party scripts.** Sign-up does not
+  reveal whether an email already has an account. See `docs/SECURITY.md`.
 - **One account, three identities.** A `GOW-USER` account and a `GOW-DEB` +
   `GOW-EXT` pair, created together by a database trigger, with independent ratings.
   Display IDs are labels — the key is a UUID.
