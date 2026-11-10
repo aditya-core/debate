@@ -1,0 +1,932 @@
+@import "tailwindcss";
+
+/* ------------------------------------------------------------------
+   Type — self-hosted, latin subset only.
+------------------------------------------------------------------- */
+@font-face {
+  font-family: "Space Grotesk Variable";
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+  src: url("/fonts/space-grotesk-latin-wght-normal.woff2")
+    format("woff2-variations");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6,
+    U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122,
+    U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "Inter Variable";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("/fonts/inter-latin-wght-normal.woff2") format("woff2-variations");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6,
+    U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122,
+    U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* ==================================================================
+   COLOUR SYSTEM
+   Two complete themes. Light is the default: warm paper, saturated
+   ink, high-chroma accents. Dark is the cinematic counterpart.
+   Tokens live on :root / [data-theme] and are mapped into Tailwind
+   with @theme inline, so every utility follows the theme.
+================================================================== */
+:root {
+  color-scheme: light;
+
+  --c-canvas: #f6f1e9;
+  --c-surface: #ffffff;
+  --c-surface-2: #fbf8f3;
+  --c-fg: #16121f;
+  --c-muted: #6a6379;
+  --c-faint: #938da0;
+  --c-line: rgba(22, 18, 31, 0.11);
+  --c-line-strong: rgba(22, 18, 31, 0.2);
+
+  --c-brand: #5b2bf5;
+  --c-brand-soft: #ede7ff;
+  --c-sky: #1170ff;
+  --c-flare: #ff3d8b;
+  --c-flare-soft: #ffe4ee;
+  --c-sun: #f5a300;
+  --c-mint: #00b98a;
+  --c-aqua: #00bcd4;
+
+  /* Text-safe versions of the accents (≥4.5:1 on the light canvas). */
+  --c-mint-text: #07795a;
+  --c-sun-text: #8f5a00;
+  --c-flare-text: #cc1256;
+
+  --shadow-card: 0 1px 2px rgba(22, 18, 31, 0.04),
+    0 12px 30px -12px rgba(22, 18, 31, 0.18);
+  --shadow-lift: 0 2px 4px rgba(22, 18, 31, 0.05),
+    0 26px 50px -18px rgba(22, 18, 31, 0.28);
+
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --c-canvas: #08070f;
+  --c-surface: #121021;
+  --c-surface-2: #100e1c;
+  --c-fg: #f6f1e9;
+  --c-muted: #a09ab3;
+  --c-faint: #7d7790;
+  --c-line: rgba(255, 255, 255, 0.11);
+  --c-line-strong: rgba(255, 255, 255, 0.2);
+
+  --c-brand: #8b5cf6;
+  --c-brand-soft: #1d1739;
+  --c-sky: #3b93ff;
+  --c-flare: #ff5c9d;
+  --c-flare-soft: #2a1220;
+  --c-sun: #fbbf24;
+  --c-mint: #34d399;
+  --c-aqua: #22d3ee;
+
+  --c-mint-text: #34d399;
+  --c-sun-text: #fbbf24;
+  --c-flare-text: #ff7ab0;
+
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4),
+    0 16px 40px -16px rgba(0, 0, 0, 0.7);
+  --shadow-lift: 0 2px 6px rgba(0, 0, 0, 0.5),
+    0 30px 60px -20px rgba(0, 0, 0, 0.8);
+}
+
+@theme inline {
+  --color-canvas: var(--c-canvas);
+  --color-surface: var(--c-surface);
+  --color-surface-2: var(--c-surface-2);
+  --color-fg: var(--c-fg);
+  --color-muted: var(--c-muted);
+  --color-faint: var(--c-faint);
+  --color-line: var(--c-line);
+  --color-brand: var(--c-brand);
+  --color-brand-soft: var(--c-brand-soft);
+  --color-sky: var(--c-sky);
+  --color-flare: var(--c-flare);
+  --color-flare-soft: var(--c-flare-soft);
+  --color-sun: var(--c-sun);
+  --color-mint: var(--c-mint);
+  --color-aqua: var(--c-aqua);
+  --color-mint-text: var(--c-mint-text);
+  --color-sun-text: var(--c-sun-text);
+  --color-flare-text: var(--c-flare-text);
+
+  --font-display: "Space Grotesk Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+}
+
+/* ==================================================================
+   BASE
+================================================================== */
+@layer base {
+  html {
+    background-color: var(--c-canvas);
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--c-canvas);
+    color: var(--c-fg);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+    transition:
+      background-color 0.5s var(--ease),
+      color 0.5s var(--ease);
+  }
+
+  ::selection {
+    background: var(--c-brand);
+    color: #fff;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--c-brand);
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+}
+
+/* ==================================================================
+   LAYOUT PRIMITIVES
+================================================================== */
+.shell {
+  width: 100%;
+  max-width: 1200px;
+  margin-inline: auto;
+  padding-inline: 1.25rem;
+}
+
+@media (min-width: 640px) {
+  .shell {
+    padding-inline: 2rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .shell {
+    padding-inline: 2.5rem;
+  }
+}
+
+.section {
+  padding-block: clamp(4rem, 9vw, 7.5rem);
+}
+
+/* ==================================================================
+   COMPONENTS
+================================================================== */
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-family: var(--font-display);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--c-muted);
+}
+
+.eyebrow::before {
+  content: "";
+  width: 1.5rem;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.5;
+}
+
+.card {
+  background: var(--c-surface);
+  border: 1px solid var(--c-line);
+  border-radius: 22px;
+  box-shadow: var(--shadow-card);
+}
+
+.card-hover {
+  transition:
+    transform 0.5s var(--ease),
+    box-shadow 0.5s var(--ease),
+    border-color 0.5s var(--ease);
+}
+
+.card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lift);
+  border-color: var(--c-line-strong);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card-hover:hover {
+    transform: none;
+  }
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.85rem;
+  border-radius: 999px;
+  border: 1px solid var(--c-line);
+  background: var(--c-surface);
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--c-muted);
+}
+
+.pill-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--c-mint);
+  box-shadow: 0 0 0 0 color-mix(in oklab, var(--c-mint) 60%, transparent);
+  animation: ping 2.4s var(--ease) infinite;
+}
+
+@keyframes ping {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in oklab, var(--c-mint) 55%, transparent);
+  }
+  70%,
+  100% {
+    box-shadow: 0 0 0 9px transparent;
+  }
+}
+
+/* --- buttons ---------------------------------------------------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  height: 3rem;
+  padding-inline: 1.5rem;
+  border-radius: 999px;
+  font-family: var(--font-display);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  white-space: nowrap;
+  transition:
+    transform 0.45s var(--ease),
+    box-shadow 0.45s var(--ease),
+    background-color 0.3s ease,
+    border-color 0.3s ease,
+    color 0.3s ease;
+}
+
+.btn-primary {
+  color: #fff;
+  background-image: linear-gradient(
+    100deg,
+    var(--c-brand) 0%,
+    #7b4dff 45%,
+    var(--c-sky) 100%
+  );
+  box-shadow: 0 10px 26px -10px color-mix(in oklab, var(--c-brand) 75%, transparent);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 18px 40px -12px color-mix(in oklab, var(--c-brand) 85%, transparent);
+}
+
+.btn-outline {
+  border: 1px solid var(--c-line-strong);
+  color: var(--c-fg);
+  background: transparent;
+}
+
+.btn-outline:hover {
+  border-color: var(--c-fg);
+  background: color-mix(in oklab, var(--c-fg) 5%, transparent);
+  transform: translateY(-2px);
+}
+
+.btn-sm {
+  height: 2.5rem;
+  padding-inline: 1.15rem;
+  font-size: 0.85rem;
+}
+
+/* --- theme toggle ------------------------------------------------ */
+.theme-toggle {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  width: 3.5rem;
+  height: 1.9rem;
+  border-radius: 999px;
+  border: 1px solid var(--c-line);
+  background: var(--c-surface-2);
+  transition: background-color 0.4s var(--ease);
+}
+
+.theme-toggle-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  display: grid;
+  place-items: center;
+  width: 1.55rem;
+  height: 1.55rem;
+  border-radius: 999px;
+  background: var(--c-surface);
+  box-shadow: var(--shadow-card);
+  color: var(--c-fg);
+  transition: transform 0.5s var(--ease);
+}
+
+[data-theme="dark"] .theme-toggle-knob {
+  transform: translateX(1.6rem);
+}
+
+/* --- reveal ------------------------------------------------------ */
+.reveal {
+  opacity: 0;
+  transform: translateY(20px);
+  transition:
+    opacity 0.9s var(--ease),
+    transform 0.9s var(--ease);
+  transition-delay: var(--d, 0ms);
+}
+
+.reveal.is-in {
+  opacity: 1;
+  transform: none;
+}
+
+html:not([data-js]) .reveal {
+  opacity: 1;
+  transform: none;
+}
+
+/* --- marquee ----------------------------------------------------- */
+.marquee {
+  display: flex;
+  overflow: hidden;
+  user-select: none;
+  gap: 0;
+  mask-image: linear-gradient(
+    90deg,
+    transparent,
+    #000 6%,
+    #000 94%,
+    transparent
+  );
+}
+
+.marquee-track {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 2.5rem;
+  padding-right: 2.5rem;
+  min-width: 100%;
+  animation: marquee-scroll 32s linear infinite;
+}
+
+.marquee:hover .marquee-track {
+  animation-play-state: paused;
+}
+
+@keyframes marquee-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-100%);
+  }
+}
+
+/* --- decorative -------------------------------------------------- */
+.grid-bg {
+  background-image: radial-gradient(
+    circle at 1px 1px,
+    var(--c-line-strong) 1px,
+    transparent 0
+  );
+  background-size: 26px 26px;
+  opacity: 0.5;
+}
+
+.orb {
+  position: absolute;
+  border-radius: 999px;
+  filter: blur(60px);
+  pointer-events: none;
+  opacity: 0.55;
+}
+
+[data-theme="dark"] .orb {
+  opacity: 0.4;
+  filter: blur(80px);
+}
+
+.text-gradient {
+  background-image: linear-gradient(
+    100deg,
+    var(--c-brand) 0%,
+    #7b4dff 30%,
+    var(--c-sky) 62%,
+    var(--c-aqua) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.text-gradient-warm {
+  background-image: linear-gradient(
+    100deg,
+    var(--c-flare) 0%,
+    #ff7a45 55%,
+    var(--c-sun) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* --- chart animation --------------------------------------------- */
+.bar-fill {
+  transform-origin: bottom;
+  transform: scaleY(0.02);
+  transition: transform 1.1s var(--ease);
+  transition-delay: var(--d, 120ms);
+}
+
+.is-in .bar-fill,
+html:not([data-js]) .bar-fill {
+  transform: scaleY(1);
+}
+
+.radar-shape {
+  transform-origin: center;
+  transform: scale(0.1) rotate(-14deg);
+  opacity: 0;
+  transition:
+    transform 1.2s var(--ease),
+    opacity 0.8s ease;
+}
+
+.is-in .radar-shape,
+html:not([data-js]) .radar-shape {
+  transform: none;
+  opacity: 1;
+}
+
+.spark-line {
+  stroke-dasharray: 620;
+  stroke-dashoffset: 620;
+  transition: stroke-dashoffset 1.8s var(--ease);
+}
+
+.is-in .spark-line,
+html:not([data-js]) .spark-line {
+  stroke-dashoffset: 0;
+}
+
+/* --- live demo --------------------------------------------------- */
+.demo-panel {
+  animation: demo-in 0.7s var(--ease) both;
+}
+
+@keyframes demo-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Reveals the guardian-consent block when the date of birth implies a minor. */
+.guardian-note {
+  animation: guardian-in 0.35s var(--ease) both;
+}
+
+@keyframes guardian-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .guardian-note {
+    animation: none;
+  }
+}
+
+/* --- equalizer --------------------------------------------------- */
+@keyframes eq {
+  0%,
+  100% {
+    transform: scaleY(0.28);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+.eq-bar {
+  transform-origin: center;
+  animation: eq 1.1s ease-in-out infinite;
+}
+
+/* --- misc -------------------------------------------------------- */
+.link-underline {
+  position: relative;
+  transition: color 0.3s ease;
+}
+
+.link-underline::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -3px;
+  height: 1px;
+  width: 100%;
+  transform: scaleX(0);
+  transform-origin: left;
+  background: currentColor;
+  transition: transform 0.45s var(--ease);
+}
+
+.link-underline:hover::after {
+  transform: scaleX(1);
+}
+
+/* SVG chart primitives.
+   `var()` does not resolve inside SVG *presentation attributes*, only in
+   CSS declarations — so these live here, not on the elements. */
+.chart-grid {
+  stroke: var(--c-line);
+}
+
+.chart-point {
+  fill: var(--c-surface);
+}
+
+.chart-label {
+  fill: var(--c-muted);
+  font-family: var(--font-display);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.chart-dot {
+  fill: var(--c-sky);
+}
+
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ==================================================================
+   MOTION LAYER
+   One curve, used everywhere: --ease. Nothing here needs a library,
+   and every effect is a transform or an opacity — both composited,
+   both cheap on a low-end phone.
+================================================================== */
+
+/* --- form honeypot -------------------------------------------------
+   Off-screen rather than display:none — some bots skip fields that are
+   not rendered. Hidden from assistive tech by aria-hidden and tabindex. */
+.hp-field {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+/* --- scroll progress hairline ------------------------------------- */
+.scroll-progress {
+  position: fixed;
+  inset-inline: 0;
+  top: 0;
+  z-index: 60;
+  height: 2px;
+  pointer-events: none;
+}
+
+.scroll-progress-bar {
+  display: block;
+  height: 100%;
+  transform: scaleX(0);
+  transform-origin: left center;
+  background-image: linear-gradient(
+    90deg,
+    var(--c-brand) 0%,
+    var(--c-sky) 55%,
+    var(--c-flare) 100%
+  );
+}
+
+/* --- masked line reveal ------------------------------------------
+   The headline is cut into lines; each line sits inside its own
+   clipping box and rises into place. Descenders are safe because the
+   clip box is padded and the padding pulled back.                    */
+.mask {
+  display: block;
+  overflow: hidden;
+  padding-block: 0.09em;
+  margin-block: -0.09em;
+}
+
+.mask-line {
+  display: block;
+  transform: translateY(115%);
+  opacity: 0;
+}
+
+html[data-js] .mask-line {
+  animation: mask-up 1.05s var(--ease) both;
+  animation-delay: var(--d, 0ms);
+}
+
+html:not([data-js]) .mask-line {
+  transform: none;
+  opacity: 1;
+}
+
+/* Below the fold the same effect waits for the section to arrive. */
+.reveal-lines .mask-line {
+  animation: none;
+  opacity: 0;
+  transform: translateY(115%);
+}
+
+.reveal-lines.is-in .mask-line {
+  animation: mask-up 1.05s var(--ease) both;
+  animation-delay: var(--d, 0ms);
+}
+
+@keyframes mask-up {
+  from {
+    transform: translateY(115%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* --- load-in rise -------------------------------------------------
+   Used for hero copy that is on screen at first paint.                */
+.rise {
+  opacity: 0;
+  transform: translateY(18px);
+  animation: rise-in 0.9s var(--ease) both;
+  animation-delay: var(--d, 0ms);
+}
+
+html:not([data-js]) .rise {
+  opacity: 1;
+  transform: none;
+}
+
+@keyframes rise-in {
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* --- drawn underline ---------------------------------------------
+   A word that underlines itself after the line has landed. The
+   pseudo-element has its own background, so it is unaffected by the
+   text clip on the word itself.                                      */
+.accent-word {
+  position: relative;
+  display: inline-block;
+  background-image: linear-gradient(
+    100deg,
+    var(--c-brand) 0%,
+    var(--c-sky) 58%,
+    var(--c-aqua) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.accent-word::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -0.03em;
+  height: 0.055em;
+  border-radius: 99px;
+  background-image: linear-gradient(90deg, var(--c-brand), var(--c-aqua));
+  transform: scaleX(0);
+  transform-origin: left center;
+  animation: ink-grow 0.95s var(--ease) forwards;
+  animation-delay: var(--d, 1.15s);
+}
+
+@keyframes ink-grow {
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/* --- magnetic wrapper --------------------------------------------
+   The child is pulled toward the pointer; the transition is what makes
+   it feel weighted rather than glued.                               */
+.magnetic {
+  display: inline-block;
+  will-change: transform;
+  transition: transform 0.35s var(--ease);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .magnetic {
+    transition: none;
+  }
+}
+
+/* --- sheen sweep on the primary action ---------------------------- */
+.btn-sheen {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-sheen::after {
+  content: "";
+  position: absolute;
+  top: -20%;
+  bottom: -20%;
+  width: 32%;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.38),
+    transparent
+  );
+  transform: translateX(-140%) skewX(-18deg);
+  animation: sheen 5.2s ease-in-out infinite;
+  animation-delay: 1.6s;
+}
+
+@keyframes sheen {
+  0% {
+    transform: translateX(-140%) skewX(-18deg);
+  }
+  55%,
+  100% {
+    transform: translateX(420%) skewX(-18deg);
+  }
+}
+
+/* --- cursor spotlight --------------------------------------------
+   Activated by a pointer handler that writes --mx/--my; with no
+   pointer (touch, keyboard) the card simply never lights up.        */
+.spot {
+  position: relative;
+  isolation: isolate;
+}
+
+.spot::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.4s var(--ease);
+  background: radial-gradient(
+    300px circle at var(--mx, 50%) var(--my, 50%),
+    color-mix(in oklab, var(--c-brand) 20%, transparent),
+    transparent 62%
+  );
+}
+
+.spot:hover::before,
+.spot:focus-within::before {
+  opacity: 1;
+}
+
+/* --- ambient floats ----------------------------------------------- */
+.float-a {
+  animation: float-y 7s ease-in-out infinite;
+}
+
+.float-b {
+  animation: float-y 5.4s ease-in-out infinite;
+  animation-delay: 0.6s;
+}
+
+@keyframes float-y {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-9px);
+  }
+}
+
+.ring-pulse {
+  animation: ring-out 3.4s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+
+@keyframes ring-out {
+  0% {
+    transform: scale(0.55);
+    opacity: 0.5;
+  }
+  70%,
+  100% {
+    transform: scale(1.9);
+    opacity: 0;
+  }
+}
+
+/* --- waveform -----------------------------------------------------
+   Seeded heights (no Math.random, so server and client agree), each
+   bar dancing on its own duration and offset.                        */
+.wave-bar {
+  transform-origin: center bottom;
+  animation: wave-dance var(--dur, 900ms) ease-in-out infinite;
+  animation-delay: var(--delay, 0ms);
+}
+
+@keyframes wave-dance {
+  0%,
+  100% {
+    transform: scaleY(var(--lo, 0.25));
+  }
+  50% {
+    transform: scaleY(var(--hi, 1));
+  }
+}
+
+/* --- typewriter caret --------------------------------------------- */
+.caret {
+  display: inline-block;
+  width: 2px;
+  height: 1.05em;
+  translate: 0 3px;
+  margin-left: 2px;
+  background: currentColor;
+  animation: caret-blink 1s step-end infinite;
+}
+
+@keyframes caret-blink {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
+/* ==================================================================
+   ACCESSIBILITY
+================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .reveal {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Guaranteed-visible fallback if the reveal observer never runs. */
+html.reveal-fallback .reveal {
+  opacity: 1 !important;
+  transform: none !important;
+}
