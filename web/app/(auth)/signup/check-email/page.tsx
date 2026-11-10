@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import AuthShell from "@/components/auth/AuthShell";
+import { VERIFICATION_ENABLED } from "@/lib/auth/config";
 
 export const metadata: Metadata = {
   title: "Check your inbox — Gift of Words",
@@ -29,6 +30,22 @@ export default async function CheckEmailPage({
         </p>
       }
     >
+      {VERIFICATION_ENABLED ? (
+        <div
+          role="alert"
+          className="mb-5 rounded-xl border border-flare/35 bg-flare-soft px-3.5 py-3 text-[0.82rem] leading-relaxed text-fg"
+        >
+          <span className="font-display uppercase tracking-[0.12em] text-flare-text">
+            Config fault:
+          </span>{" "}
+          you shouldn&apos;t see this page — email verification uses a six-digit
+          code. Supabase&apos;s own confirmation is still switched on. Turn{" "}
+          <strong>Confirm email</strong> off in Authentication → Sign In /
+          Providers → Email, restart the server, and run{" "}
+          <code className="font-display">npm run doctor</code>.
+        </div>
+      ) : null}
+
       <div className="rounded-2xl border border-line bg-surface p-5">
         <div className="flex items-center gap-3">
           <span

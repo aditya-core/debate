@@ -1158,3 +1158,45 @@ with an `.elevated` class that uses the variable, so it still follows light/dark
 `issue_email_otp`, no `verify_email_otp`, no bcrypt round-trip. Brevo has never
 been called. The tick → `/onboarding` transition has never been seen in a browser.
 All four need the project and a real sign-up.
+
+---
+
+### S-22 — 2026-11-10 — Brevo was innocent: naming the configuration fault
+
+**Symptom.** Aditya kept landing on `/signup/check-email` and concluded Brevo was
+broken. It could not have been: that page appears only when `signUp()` returns
+**no session**, which happens only while Supabase still requires its own
+confirmation link. Our code never reached `issue_email_otp()`, so no code was
+generated and Brevo was never called. The mail being described was Supabase's.
+
+**M-029 — a misconfiguration that quietly impersonates a product flow.**
+With `EMAIL_VERIFICATION_MODE=otp` and Supabase's "Confirm email" still on, the
+new sign-up path silently degraded into the old one. Two rounds were spent
+looking at the wrong layer, which is the actual cost of that kindness. Failures
+that are ours to fix must say so out loud; only failures that belong to the
+learner get a friendly sentence.
+
+**D-083 — configuration faults are named, with the toggle in the message.**
+- The sign-up action now returns an error instead of redirecting: *"Email
+  verification isn't set up correctly on our side…"*, and logs the exact
+  dashboard path server-side.
+- `/signup/check-email` renders a red **Config fault** block when OTP mode is
+  active, so arriving there is self-explanatory rather than confusing.
+- **`npm run doctor`** — reads `.env.local`, asks Supabase
+  `/auth/v1/settings` what it actually does with new sign-ups
+  (`mailer_autoconfirm`), and prints one verdict with one instruction. Exit 1
+  when broken, 0 when safe to test. Read-only, anon key only.
+
+**Verified**
+- `doctor`, case A (Supabase still confirming — Aditya's exact state): exits
+  **1**, names the toggle.
+- `doctor`, case B (autoconfirm on + sender configured): exits **0**,
+  "Configuration looks right".
+- `check-email` built in `otp` mode renders the config-fault banner; the same
+  page built in `off` mode does not. Both checked over HTTP.
+- Sign-up footer reads "a six-digit code to your inbox" only in `otp` mode.
+- Build clean, audit 7/7, tests 7/7 + guard, `tsc` clean.
+
+**Still not fixed by code, by design:** the dashboard toggle itself. No amount of
+application code can make Supabase hand back a session it has been told not to
+give. The app can only say so clearly — which it now does in three places.
