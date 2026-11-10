@@ -17,7 +17,7 @@ The defaults that matter:
 | Build Command | leave default — `package.json` already says `next build` |
 | Output Directory | leave default — the build writes `.next` |
 | Install Command | default (`npm install`) |
-| Node.js Version | 22.x |
+| Node.js Version | 22.x — **must be 22.12 or newer** |
 
 If the root directory is left as the repository root, the build fails on the
 first line: there is no `package.json` there.

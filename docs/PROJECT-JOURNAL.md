@@ -801,3 +801,34 @@ verified. Cross-platform is a correctness property, not a nice-to-have.
 **Verified:** config resolves `.next-dev` under `NODE_ENV=development` and
 `.next` under `production`; build clean; 7/7 tests via the explicit path; style
 audit 6/6 (324 / 196 / 147 / 154 / 136 / 130); `tsc` clean.
+
+---
+
+### S-15 — 2026-11-10 — Tailwind needed a newer Node than his
+
+**The error, on Windows:**
+
+```
+Build Error — Error evaluating Node.js code
+./app/globals.css
+Error: require() of ES Module
+  ...\node_modules\magic-string\dist\index.mjs not supported.
+```
+
+**Cause, proven rather than guessed.** `@tailwindcss/node` is CommonJS and calls
+`require("magic-string")`. `magic-string@1.4.5` — the version Tailwind 4.3.5
+resolves — has an exports map of exactly one entry, `"./dist/index.mjs"`. There is
+no CommonJS build to fall back to. Node learned to `require()` an ES module in
+**22.12** (and backported to 20.19); below that it throws `ERR_REQUIRE_ESM`.
+Our sandbox builds clean on 22.22.3, which is why every check I ran passed.
+
+**M-021 — the project never declared the Node version it needs.** Nothing in
+`package.json` said 22.12; nothing stopped an older Node from installing and
+failing three layers deep in a CSS compiler. Fixed with `engines.node: ">=22.12.0"`,
+`.nvmrc`, and `.npmrc` with `engine-strict=true`, so `npm install` now fails
+immediately with *"Unsupported engine"* instead of surfacing as a build error.
+
+**Verified:** `engines` present; `npm ci` accepts Node 22.22.3 with
+`engine-strict` on; build clean; style audit 6/6; 7/7 tests; `tsc` clean.
+
+**Not verified:** that his machine is now on 22.12+. He has to run `node -v`.
