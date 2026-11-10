@@ -60,11 +60,16 @@ if (SITE_ORIGIN) {
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  // Development renders into its own directory (.next-dev, see the `dev`
-  // script) so a build can never clobber it — that collision is what served a
-  // mismatched HTML/CSS pair on 9 Nov. Production builds use the default .next
-  // because that is the directory Vercel expects to find.
-  distDir: process.env.NEXT_DIST_DIR || ".next",
+  // Development renders into its own directory so a build can never clobber it
+  // — that collision is what served a mismatched HTML/CSS pair on 9 Nov.
+  // Production keeps the default `.next` because that is where Vercel looks.
+  //
+  // The choice is made from NODE_ENV rather than an env var in the npm script:
+  // `FOO=bar cmd` is POSIX-only syntax and fails on Windows, where npm runs
+  // scripts through cmd.exe. This works identically on every platform.
+  distDir:
+    process.env.NEXT_DIST_DIR ||
+    (process.env.NODE_ENV === "development" ? ".next-dev" : ".next"),
   // Allow the sandbox preview host to reach the dev server.
   allowedDevOrigins: ["*.e2b.app", "*.arena.ai", "*.e2b.dev"],
   poweredByHeader: false,

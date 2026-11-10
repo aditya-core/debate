@@ -43,26 +43,59 @@ appear in this repository or in Vercel.
 
 ## 3. Create the schema
 
-Dashboard → **SQL Editor** → new query → paste the whole of
-`supabase/migrations/0001_identity.sql` → **Run**.
+Dashboard → **SQL Editor** → **New query**. Run the two files **in order**, one
+run each — not pasted together, so a failure tells you which file it came from.
 
-Confirm it took:
+**3a. `supabase/migrations/0001_identity.sql`** — paste the whole file → **Run**.
+
+Builds: `accounts`, `debate_profiles`, `extempore_profiles`, `guardian_consents`,
+the display-ID helper, and the `on_auth_user_created` trigger that provisions all
+three identity rows the instant an auth user exists.
+
+**3b. `supabase/migrations/0002_security.sql`** — paste the whole file → **Run**.
+
+Hardens what 0001 created: consent tokens become 32 random bytes hashed with
+SHA-256 instead of `md5(uuid)`; the consent row stops being client-readable;
+`EXECUTE` is revoked on the internal functions; `delete_my_account()` is added
+for DPDP erasure.
+
+Both files are idempotent (`if not exists`, `create or replace`, `drop policy if
+exists`), so re-running either one is safe. If a statement errors, read the first
+line of the message — it names the object.
+
+### Confirm it took
 
 ```sql
+-- the trigger that provisions every new account
 select tgname from pg_trigger where tgname = 'on_auth_user_created';
-select tablename, rowsecurity from pg_tables
- where schemaname = 'public' order by tablename;
+
+-- RLS must be on for all four tables, and there must be no policy at all on
+-- guardian_consents (it is deliberately unreachable from the client)
+select tablename, rowsecurity,
+       (select count(*) from pg_policies p
+         where p.schemaname = 'public' and p.tablename = t.tablename) as policies
+  from pg_tables t
+ where schemaname = 'public'
+   and tablename in ('accounts','debate_profiles','extempore_profiles','guardian_consents')
+ order by tablename;
+
+-- function permissions: no `=X/` (PUBLIC) on the first three
+select proname, proacl
+  from pg_proc
+ where pronamespace = 'public'::regnamespace
+   and proname in ('gow_display_id','touch_updated_at','handle_new_user','delete_my_account');
 ```
 
-You want the trigger present, and `rowsecurity = true` on `accounts`,
-`debate_profiles`, `extempore_profiles`, `guardian_consents`.
+Expected: one trigger row; `rowsecurity = true` on all four; `guardian_consents`
+with `policies = 0`; `delete_my_account` executable by `authenticated` only.
 
-What the migration builds: one `accounts` row per auth user plus a
-`debate_profiles` and an `extempore_profiles` row, all created by a trigger the
-instant the auth user exists. Under-18 sign-ups get
-`status = 'pending_guardian_consent'` and a `guardian_consents` row.
+### The identity it builds
 
----
+One `accounts` row per auth user (`GOW-USER-…`) plus a `debate_profiles`
+(`GOW-DEB-…`) and an `extempore_profiles` (`GOW-EXT-…`) row, all created in the
+same transaction by the trigger. Both worlds start at rating 1000, XP 0. An
+under-18 sign-up gets `status = 'pending_guardian_consent'` and a
+`guardian_consents` row.
 
 ## 4. Auth URL configuration
 
