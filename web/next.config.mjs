@@ -21,9 +21,14 @@ const FRAME_ANCESTORS = SITE_ORIGIN
   ? "'none'"
   : "'self' https://*.e2b.app https://*.arena.ai https://*.e2b.dev";
 
+// React uses eval() in development only (reconstructing call stacks across the
+// server/client boundary). Production never does, so production keeps the
+// policy tight — this is the one place where dev and prod are allowed to differ.
+const isDev = process.env.NODE_ENV === "development";
+
 const csp = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline'",
+  isDev ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'" : "script-src 'self' 'unsafe-inline'",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob:",
   "font-src 'self'",

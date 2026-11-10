@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useActionState, useState } from "react";
-import { INITIAL_STATE, signInAction } from "@/lib/auth/actions";
+import { signInAction } from "@/lib/auth/actions";
+import { INITIAL_STATE } from "@/lib/auth/state";
 
 export default function SignInForm() {
   const [state, formAction, pending] = useActionState(signInAction, INITIAL_STATE);

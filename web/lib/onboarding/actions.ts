@@ -6,13 +6,7 @@ import { getAccountContext } from "@/lib/auth/guard";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { onboardingSchema } from "@/lib/onboarding/schema";
 
-export type OnboardingState = {
-  status: "idle" | "error";
-  message?: string;
-};
-
-export const ONBOARDING_INITIAL: OnboardingState = { status: "idle" };
-
+import type { OnboardingState } from "@/lib/onboarding/state";
 /**
  * The only way a learner profile is written.
  *
