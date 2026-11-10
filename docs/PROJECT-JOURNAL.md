@@ -761,3 +761,43 @@ from that build; style audit 6/6 unchanged (324 / 196 / 147 / 154 / 136 / 130);
 all five routes 200; CSP still present on every response.
 
 **Not verified:** that Vercel builds it. Nobody has connected the repository yet.
+
+---
+
+### S-14 — 2026-11-10 — The dev script only worked on Unix
+
+**Aditya cloned on Windows** and `npm run dev` died immediately:
+
+```
+'NEXT_DIST_DIR' is not recognized as an internal or external command
+```
+
+**M-020 — a POSIX-only npm script.** In S-13 I isolated the dev server with
+`NEXT_DIST_DIR=.next-dev next dev`. That leading `VAR=value command` form is
+shell syntax; on Windows npm runs scripts through `cmd.exe`, which reads
+`NEXT_DIST_DIR` as the name of a program. Every script I write runs here on
+Linux, so it passed review, the build and the audit — and was broken for the
+only person who actually has to run it.
+
+**Fixed by removing the env var from the script entirely.** `next.config.mjs`
+now chooses the directory from `NODE_ENV`, which Next sets before loading the
+config:
+
+| Command | `NODE_ENV` | Directory |
+| --- | --- | --- |
+| `next dev` | `development` | `.next-dev` |
+| `next build` · `next start` | `production` | `.next` |
+
+Identical behaviour on Linux, macOS and Windows, and the isolation from S-08
+still holds. `NEXT_DIST_DIR` remains as a manual override.
+
+Also made portable in the same commit: `npm test` now names
+`scripts/validation.test.mjs` explicitly, because `scripts/*.test.mjs` relies on
+the shell expanding the glob — `cmd.exe` does not.
+
+**Lesson:** a script that only ever runs on the machine it was written on is not
+verified. Cross-platform is a correctness property, not a nice-to-have.
+
+**Verified:** config resolves `.next-dev` under `NODE_ENV=development` and
+`.next` under `production`; build clean; 7/7 tests via the explicit path; style
+audit 6/6 (324 / 196 / 147 / 154 / 136 / 130); `tsc` clean.
