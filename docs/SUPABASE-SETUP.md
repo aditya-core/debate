@@ -43,7 +43,7 @@ appear in this repository or in Vercel.
 
 ## 3. Create the schema
 
-Dashboard → **SQL Editor** → **New query**. Run the two files **in order**, one
+Dashboard → **SQL Editor** → **New query**. Run the three files **in order**, one
 run each — not pasted together, so a failure tells you which file it came from.
 
 **3a. `supabase/migrations/0001_identity.sql`** — paste the whole file → **Run**.
@@ -59,9 +59,22 @@ SHA-256 instead of `md5(uuid)`; the consent row stops being client-readable;
 `EXECUTE` is revoked on the internal functions; `delete_my_account()` is added
 for DPDP erasure.
 
-Both files are idempotent (`if not exists`, `create or replace`, `drop policy if
-exists`), so re-running either one is safe. If a statement errors, read the first
-line of the message — it names the object.
+**3c. `supabase/migrations/0003_worlds.sql`** — paste the whole file → **Run**.
+
+Guarantees every account owns exactly one debate identity and one extempore
+identity — it repairs any account that is missing one, backfills existing rows,
+and rewrites the sign-up trigger to create the pair through a single function.
+Then it creates the places their data will live: `debate_sessions`,
+`extempore_sessions`, and `analytics_events`, each scoped to the account and,
+where it applies, to the world identity that produced it.
+
+The *contents* of a round — prompt, rubric, scores — are deliberately not
+defined yet. `payload jsonb` captures whatever the arena writes until the rubric
+is fixed, at which point those become real columns.
+
+All three files are idempotent (`if not exists`, `create or replace`, `drop
+policy if exists`), so re-running any of them is safe. If a statement errors,
+read the first line of the message — it names the object.
 
 ### Confirm it took
 
@@ -88,6 +101,18 @@ select proname, proacl
 
 Expected: one trigger row; `rowsecurity = true` on all four; `guardian_consents`
 with `policies = 0`; `delete_my_account` executable by `authenticated` only.
+
+Then, after 3c, check that nobody is missing a world identity:
+
+```sql
+select count(*) filter (where d.account_id is null) as missing_debate,
+       count(*) filter (where e.account_id is null) as missing_extempore
+  from public.accounts a
+  left join public.debate_profiles d    on d.account_id = a.id
+  left join public.extempore_profiles e on e.account_id = a.id;
+```
+
+Both columns must be `0`. After a test sign-up they still must be `0`.
 
 ### The identity it builds
 
@@ -148,6 +173,9 @@ Checklist:
 6. Sign out → `/signin` → sign back in → same IDs.
 7. In the SQL editor, `select * from public.accounts;` returns exactly one row
    per sign-up — no duplicates, no orphans.
+8. `/signin` → **Forgot your password?** → enter the address → the email arrives
+   → the link lands on **Choose a new password** → setting one returns you to
+   `/account` with a confirmation. (Same mail limitation as step 5 applies.)
 
 If `/account` says *"Your login exists, your profile doesn't"*, step 3 was
 skipped or failed: the trigger is missing, so only the auth user exists.

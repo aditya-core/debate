@@ -228,3 +228,120 @@ export async function signInAction(
 
   redirect("/account");
 }
+
+/* ------------------------------------------------------------------------- */
+/* Password recovery                                                          */
+/* ------------------------------------------------------------------------- */
+
+const emailOnlySchema = z.object({
+  email: z.string().trim().toLowerCase().email("That email doesn't look right."),
+});
+
+/**
+ * Always answers the same way, whether or not the address has an account.
+ * A recovery form that says "no account with that email" is the same oracle as
+ * a signup form that says "already registered" — see D-065.
+ */
+export async function requestPasswordResetAction(
+  _prev: AuthState,
+  formData: FormData,
+): Promise<AuthState> {
+  if (!isSupabaseConfigured) {
+    return {
+      status: "error",
+      message:
+        "Password recovery isn't switched on in this environment yet. The database connection hasn't been configured.",
+    };
+  }
+
+  const parsed = emailOnlySchema.safeParse({
+    email: String(formData.get("email") ?? ""),
+  });
+
+  if (!parsed.success) {
+    return { status: "error", fieldErrors: { email: "That email doesn't look right." } };
+  }
+
+  const supabase = await createServerSupabase();
+  await supabase.auth.resetPasswordForEmail(parsed.data.email, {
+    redirectTo: `${await origin()}/auth/callback?next=/account/update-password`,
+  });
+
+  // Deliberately ignores the result: an error here is almost always "no such
+  // user", and telling the visitor that is telling an attacker too.
+  return {
+    status: "success",
+    message: "If that address has an account, a reset link is on its way.",
+  };
+}
+
+const newPasswordSchema = z
+  .object({
+    password: z
+      .string()
+      .min(10, "Use at least 10 characters.")
+      .regex(/[A-Za-z]/, "Include at least one letter.")
+      .regex(/[0-9]/, "Include at least one number."),
+    confirmPassword: z.string().min(1, "Type your password once more."),
+  })
+  .refine((v) => passwordsMatch(v.password, v.confirmPassword), {
+    path: ["confirmPassword"],
+    message: "Those passwords don't match.",
+  });
+
+export async function updatePasswordAction(
+  _prev: AuthState,
+  formData: FormData,
+): Promise<AuthState> {
+  if (!isSupabaseConfigured) {
+    return {
+      status: "error",
+      message:
+        "Password changes aren't switched on in this environment yet. The database connection hasn't been configured.",
+    };
+  }
+
+  const parsed = newPasswordSchema.safeParse({
+    password: String(formData.get("password") ?? ""),
+    confirmPassword: String(formData.get("confirmPassword") ?? ""),
+  });
+
+  if (!parsed.success) {
+    const fieldErrors: Record<string, string> = {};
+    for (const issue of parsed.error.issues) {
+      const key = String(issue.path[0] ?? "form");
+      if (!fieldErrors[key]) fieldErrors[key] = issue.message;
+    }
+    return { status: "error", fieldErrors };
+  }
+
+  const supabase = await createServerSupabase();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  // A recovery link gets you here with a session. No session, no password.
+  if (!user) {
+    return {
+      status: "error",
+      message: "That reset link has expired. Ask for a new one.",
+    };
+  }
+
+  const { error } = await supabase.auth.updateUser({
+    password: parsed.data.password,
+  });
+
+  if (error) {
+    const message = error.message.toLowerCase();
+    if (message.includes("same") || message.includes("different")) {
+      return {
+        status: "error",
+        message: "Choose a password you haven't used here before.",
+      };
+    }
+    return { status: "error", message: "We couldn't change it. Try again." };
+  }
+
+  redirect("/account?password=changed");
+}

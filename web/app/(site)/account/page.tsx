@@ -27,7 +27,12 @@ type WorldRow = {
   xp: number;
 };
 
-export default async function AccountPage() {
+export default async function AccountPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ password?: string }>;
+}) {
+  const { password: passwordState } = await searchParams;
   if (!isSupabaseConfigured) {
     return (
       <Notice
@@ -88,6 +93,18 @@ export default async function AccountPage() {
           </button>
         </form>
       </header>
+
+      {passwordState === "changed" ? (
+        <div className="mt-6 rounded-xl border border-mint/35 bg-mint/10 px-4 py-3.5">
+          <p className="font-display text-[0.68rem] uppercase tracking-[0.16em] text-mint-text">
+            Password updated
+          </p>
+          <p className="mt-1.5 text-[0.86rem] leading-relaxed text-muted">
+            You&apos;re signed in with the new one. Any other devices will need it
+            too.
+          </p>
+        </div>
+      ) : null}
 
       {account.status === "pending_guardian_consent" ? (
         <div className="mt-6 rounded-xl border border-line bg-surface-2 px-4 py-3.5">

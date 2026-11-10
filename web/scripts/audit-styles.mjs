@@ -21,6 +21,7 @@ const ROUTES = [
   "/legal",
   "/signup",
   "/signin",
+  "/signin/forgot",
   "/signup/check-email?email=you@example.com&guardian=1",
 ];
 
