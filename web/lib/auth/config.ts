@@ -1,25 +1,23 @@
 /**
- * Email verification — PAUSED ON PURPOSE (D-077, 2026-11-10).
+ * Email verification mode.
  *
- * Aditya asked for the verification hop to stay built but be out of the way
- * until he switches it on. So: the code path is intact, the flag is the only
- * thing standing in front of it.
+ *   "off"  no verification hop at all. Sign-up goes straight to the wizard.
+ *   "otp"  a six-digit code, generated and stored in Postgres (0005), mailed
+ *          through a sender we control (Brevo — free, no domain needed).
  *
- * TO SWITCH IT ON — two places, both required:
- *   1. here:  REQUIRE_EMAIL_CONFIRMATION = true   (or set
- *             NEXT_PUBLIC_REQUIRE_EMAIL_CONFIRMATION=true in the environment)
- *   2. Supabase → Authentication → Sign In / Providers → Email →
- *      "Confirm email" ON, and a working SMTP sender (see
- *      docs/SUPABASE-SETUP.md §5).
+ * Why a code instead of a magic link: no redirect URL to allowlist, no deep
+ * link, and it works in Gmail's in-app browser, which is where most phones open
+ * mail. What it does not remove: something still has to deliver the digits.
  *
- * Doing only one of them produces a confusing half-state, so the sign-up action
- * logs a warning if it ever sees them disagree.
- *
- * What "paused" costs: anyone can type an address they do not own and end up
- * with an account. That is acceptable while the only accounts are ours. It is
- * not acceptable for a public launch, and it is recorded as an accepted risk in
- * docs/SECURITY.md (A-08).
+ * Switch it on with NEXT_PUBLIC_EMAIL_VERIFICATION_MODE=otp plus BREVO_API_KEY
+ * and EMAIL_FROM (see docs/SUPABASE-SETUP.md §5). Turning the mode on without a
+ * sender is a trap we detect rather than guess at: in production the code
+ * simply is not sent and the page says so.
  */
-const raw = process.env.NEXT_PUBLIC_REQUIRE_EMAIL_CONFIRMATION;
+export type EmailVerificationMode = "off" | "otp";
 
-export const REQUIRE_EMAIL_CONFIRMATION = raw === "true";
+const raw = process.env.NEXT_PUBLIC_EMAIL_VERIFICATION_MODE;
+
+export const EMAIL_VERIFICATION_MODE: EmailVerificationMode = raw === "otp" ? "otp" : "off";
+
+export const VERIFICATION_ENABLED = EMAIL_VERIFICATION_MODE === "otp";

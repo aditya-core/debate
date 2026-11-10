@@ -83,7 +83,16 @@ tutor will be given instead of re-deriving the shape from five columns.
 Writes go through `complete_onboarding(jsonb)` only; there is no insert/update
 policy, so `completed_at` cannot be forged by a client that skipped the wizard.
 
-All four files are idempotent (`if not exists`, `create or replace`, `drop
+**3e. `supabase/migrations/0005_email_verification.sql`** — paste the whole file → **Run**.
+
+Adds `accounts.email_verified_at` and the `email_otps` table. A six-digit code
+lives for ten minutes, is stored **only as a bcrypt hash**, allows five attempts,
+and is deleted the moment it is used or replaced — one live code per account,
+enforced by a partial unique index. Clients have no access to the table at all;
+`issue_email_otp()` and `verify_email_otp()` are the only doors, and the resend
+cooldown is enforced in SQL rather than in the button.
+
+All five files are idempotent (`if not exists`, `create or replace`, `drop
 policy if exists`), so re-running any of them is safe. If a statement errors,
 read the first line of the message — it names the object.
 
@@ -153,53 +162,76 @@ of a confirmation link that lands on a blank page.
 
 ---
 
-## 5. Email — built, paused (D-077)
+## 5. Email verification — six digits, not a link
 
-Verification is **switched off on purpose** while we build. Sign-up returns a
-session immediately and drops the learner straight into `/onboarding`, and
-`/signup` says so on the page rather than pretending a mail is coming.
+The learner types a code instead of clicking a link. That choice removes the
+three things that usually break a magic link: an allowlist of redirect URLs, a
+deep link that Gmail's in-app browser mangles, and a link that expires before it
+is opened on a second device.
 
-What that costs: an account can be created with an address nobody has proven
-they own. Fine while the only accounts are ours; not fine for launch. Recorded
-as an accepted risk (`docs/SECURITY.md`, A-08).
+**What it does not remove: something still has to deliver the digits.** A code is
+useless if it does not arrive, so a sender is required — but *not* a domain.
+Brevo lets you verify a single sender address and send from it, 300 a day, free.
 
-### Turning it back on — two switches, both required
+### How the flow runs
 
-1. **Environment:** `NEXT_PUBLIC_REQUIRE_EMAIL_CONFIRMATION=true`
-   (or set `REQUIRE_EMAIL_CONFIRMATION = true` in `web/lib/auth/config.ts`).
+```
+/signup  →  code generated in Postgres, mailed  →  /verify  →  /onboarding
+```
+
+- Ten minutes to live, five attempts, 120-second resend cooldown.
+- One live code per account: a resend destroys the previous digits.
+- Wrong, expired or locked codes each get their own sentence on screen — they are
+  not collapsed into "invalid".
+
+### Switching it on
+
+1. **Environment** (`web/.env.local`, and Vercel for production):
+
+   ```bash
+   NEXT_PUBLIC_EMAIL_VERIFICATION_MODE=otp
+   BREVO_API_KEY=xkeysib-...
+   EMAIL_FROM=you@gmail.com        # the address you verified in Brevo
+   EMAIL_FROM_NAME=Gift of Words
+   ```
+
 2. **Supabase** → Authentication → Sign In / Providers → Email →
-   **Confirm email ON**, with a working SMTP sender — see below.
+   **Confirm email OFF**. We send the code ourselves; Supabase's own
+   confirmation must be off or the learner gets two verifications and the wrong
+   mail.
 
-If they disagree, the sign-up action logs a warning rather than guessing:
+3. Restart the dev server — `NEXT_PUBLIC_*` is baked in at build time.
+
+### Getting a Brevo key (5 minutes, free, no domain)
+
+1. Sign up at brevo.com → **SMTP & API → API Keys → Generate a new API key**
+   (an `xkeysib-…` v3 key).
+2. **Senders & Domains → Add a sender** — your own Gmail address. Brevo emails a
+   verification link; click it.
+3. Put that address in `EMAIL_FROM` — it must match exactly, or Brevo rejects the
+   send with a 400.
+
+Free tier: 300 emails/day. At one code per sign-up plus resends, that is roughly
+200 registrations a day.
+
+### While no sender is configured
+
+In development the code is printed to the **server console** and the page says so:
 
 ```
-[signup] REQUIRE_EMAIL_CONFIRMATION is on but Supabase returned a session.
+[email] (dev, no sender configured) code for you@gmail.com: 481920
 ```
 
-The switch in code only controls *what we say and where we send people*. The
-switch in Supabase controls whether a session exists at all.
+A production build never does this — with no key it logs an error and the page
+tells the learner the sender isn't configured. That is deliberate: silent failure
+would look like "the email never arrived", which is the least debuggable state
+there is.
 
-### The sender
+### Switching it back off
 
-The built-in sender allows **2 messages per hour, and only to members of your
-Supabase organisation** — useless for real users (Q-016). Free options that do
-not need a domain:
-
-| Provider | Free allowance |
-|---|---|
-| **Brevo** | 300/day — verify a single sender address |
-| **Gmail SMTP** | ~500/day — 2-Step Verification + App Password |
-| **Resend** | 100/day — needs a verified domain |
-
-Authentication → **Emails → SMTP Settings → Enable custom SMTP**:
-
-- **Brevo:** `smtp-relay.brevo.com`, port `587`, username = Brevo login,
-  password = SMTP key.
-- **Gmail:** `smtp.gmail.com`, port `587`, username = full address, password =
-  16-character App Password (spaces removed).
-
-Then set **Sender email** to the address you verified and send yourself one real
-sign-up.
+`NEXT_PUBLIC_EMAIL_VERIFICATION_MODE=off` (the default). Sign-up then goes
+straight to `/onboarding`. Cost of being off: an account can be created with an
+address nobody has proven they own — recorded as A-08 in `docs/SECURITY.md`.
 
 ## 6. Restart and verify
 
@@ -216,17 +248,20 @@ Checklist:
 2. Submit an empty form → field errors, nothing posted.
 3. Submit with a date of birth under 18 → guardian field appears, and the
    account lands as *Pending approval*.
-4. Submit valid adult details → **straight to `/onboarding`** while verification
-   is paused (with verification on: confirmation email → link → `/onboarding`).
-5. The wizard will not let you past step 1 without a goal, and has no link back
+4. Submit valid adult details → **`/verify`** (mode `otp`) or straight to
+   `/onboarding` (mode `off`).
+5. On `/verify`: the code from your inbox (or the terminal, in dev) → six cells
+   fill one by one → green tick → lands on `/onboarding`. A wrong code shakes the
+   row and clears it; "Resend" is disabled for two minutes, then works.
+6. The wizard will not let you past step 1 without a goal, and has no link back
    to the site — only sign-out. That is deliberate.
-6. Finish setup → `/account` with a "Setup complete" banner, the summary of what
+7. Finish setup → `/account` with a "Setup complete" banner, the summary of what
    you chose, and three IDs: `GOW-USER-…`, `GOW-DEB-…`, `GOW-EXT-…`, each world
    at rating 1000 / XP 0.
-7. Reload `/onboarding` now → redirected to `/account`. Setup is one-way until
+8. Reload `/onboarding` now → redirected to `/account`. Setup is one-way until
    you choose *Edit answers*.
-8. Sign out → `/signin` → sign back in → lands on `/account`, not the wizard.
-9. In the SQL editor, `select * from public.accounts;` returns exactly one row
+9. Sign out → `/signin` → sign back in → lands on `/account`, not the wizard.
+10. In the SQL editor, `select * from public.accounts;` returns exactly one row
    per sign-up — no duplicates, no orphans. And:
    `select public.learner_brief(id) from public.accounts order by created_at desc limit 1;`
    returns the paragraph the AI will be given.
