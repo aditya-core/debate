@@ -72,7 +72,18 @@ The *contents* of a round — prompt, rubric, scores — are deliberately not
 defined yet. `payload jsonb` captures whatever the arena writes until the rubric
 is fixed, at which point those become real columns.
 
-All three files are idempotent (`if not exists`, `create or replace`, `drop
+**3d. `supabase/migrations/0004_onboarding.sql`** — paste the whole file → **Run**.
+
+Creates `learner_profiles`: one row per account holding what the learner is
+preparing for, their experience, self-rated confidence, topics, daily budget and
+optional deadline. Typed columns for queries, plus `answers jsonb` keeping the
+raw submission, plus `learner_brief(account_id)` — one stable text block the AI
+tutor will be given instead of re-deriving the shape from five columns.
+
+Writes go through `complete_onboarding(jsonb)` only; there is no insert/update
+policy, so `completed_at` cannot be forged by a client that skipped the wizard.
+
+All four files are idempotent (`if not exists`, `create or replace`, `drop
 policy if exists`), so re-running any of them is safe. If a statement errors,
 read the first line of the message — it names the object.
 
@@ -127,7 +138,14 @@ under-18 sign-up gets `status = 'pending_guardian_consent'` and a
 Dashboard → **Authentication → URL Configuration**:
 
 - **Site URL:** `http://localhost:3000` while building.
-- **Redirect URLs:** add `http://localhost:3000/auth/callback`.
+- **Redirect URLs:** add `http://localhost:3000/auth/callback`
+
+Sign-up and password reset both redirect to `/auth/callback` with a `next=`
+parameter (`?next=/onboarding`, `?next=/account/update-password`). Only the
+callback itself needs allowlisting — Supabase matches the path, and our route
+decides where to go next. Do not add a wildcard like `http://localhost:3000/**`
+to save typing: it would also allow an attacker-crafted link to bounce a
+confirmed session anywhere on the site.
 
 When the Vercel preview goes up, add its origin too, and switch Site URL to the
 production domain once it exists. A missing redirect entry is the usual cause
@@ -135,22 +153,53 @@ of a confirmation link that lands on a blank page.
 
 ---
 
-## 5. Email, while building
+## 5. Email — built, paused (D-077)
 
-The built-in sender is limited to **2 messages per hour, and only to members of
-your Supabase organisation** — fine for testing your own address, useless for
-real users (tracked as Q-016).
+Verification is **switched off on purpose** while we build. Sign-up returns a
+session immediately and drops the learner straight into `/onboarding`, and
+`/signup` says so on the page rather than pretending a mail is coming.
 
-Two options:
+What that costs: an account can be created with an address nobody has proven
+they own. Fine while the only accounts are ours; not fine for launch. Recorded
+as an accepted risk (`docs/SECURITY.md`, A-08).
 
-- **Fast loop:** Authentication → Sign In / Providers → Email →
-  turn **Confirm email** off. Sign-up then returns a session immediately and
-  you land on `/account` without opening mail. Turn it back on before anyone
-  else is given the link.
-- **Test the real path:** leave it on, add your own address to the
-  organisation, and confirm the `/auth/callback` hop end to end.
+### Turning it back on — two switches, both required
 
----
+1. **Environment:** `NEXT_PUBLIC_REQUIRE_EMAIL_CONFIRMATION=true`
+   (or set `REQUIRE_EMAIL_CONFIRMATION = true` in `web/lib/auth/config.ts`).
+2. **Supabase** → Authentication → Sign In / Providers → Email →
+   **Confirm email ON**, with a working SMTP sender — see below.
+
+If they disagree, the sign-up action logs a warning rather than guessing:
+
+```
+[signup] REQUIRE_EMAIL_CONFIRMATION is on but Supabase returned a session.
+```
+
+The switch in code only controls *what we say and where we send people*. The
+switch in Supabase controls whether a session exists at all.
+
+### The sender
+
+The built-in sender allows **2 messages per hour, and only to members of your
+Supabase organisation** — useless for real users (Q-016). Free options that do
+not need a domain:
+
+| Provider | Free allowance |
+|---|---|
+| **Brevo** | 300/day — verify a single sender address |
+| **Gmail SMTP** | ~500/day — 2-Step Verification + App Password |
+| **Resend** | 100/day — needs a verified domain |
+
+Authentication → **Emails → SMTP Settings → Enable custom SMTP**:
+
+- **Brevo:** `smtp-relay.brevo.com`, port `587`, username = Brevo login,
+  password = SMTP key.
+- **Gmail:** `smtp.gmail.com`, port `587`, username = full address, password =
+  16-character App Password (spaces removed).
+
+Then set **Sender email** to the address you verified and send yourself one real
+sign-up.
 
 ## 6. Restart and verify
 
@@ -166,40 +215,18 @@ Checklist:
 1. `/signup` shows no "database isn't connected" banner.
 2. Submit an empty form → field errors, nothing posted.
 3. Submit with a date of birth under 18 → guardian field appears, and the
-   account lands on `/account` as *Pending approval*.
-4. Submit valid adult details → confirmation email → link → `/account`.
-5. `/account` shows three IDs: `GOW-USER-…`, `GOW-DEB-…`, `GOW-EXT-…`, each
-   world at rating 1000 / XP 0.
-6. Sign out → `/signin` → sign back in → same IDs.
-7. In the SQL editor, `select * from public.accounts;` returns exactly one row
-   per sign-up — no duplicates, no orphans.
-8. `/signin` → **Forgot your password?** → enter the address → the email arrives
-   → the link lands on **Choose a new password** → setting one returns you to
-   `/account` with a confirmation. (Same mail limitation as step 5 applies.)
-
-If `/account` says *"Your login exists, your profile doesn't"*, step 3 was
-skipped or failed: the trigger is missing, so only the auth user exists.
-
----
-
-## 7. Free-tier limits that will bite
-
-| Limit | Consequence | Mitigation |
-| --- | --- | --- |
-| 7-day inactivity pause | Project sleeps after a week without traffic | A scheduled ping, or accept the cold start |
-| 500 MB database | Years away at our row sizes | — |
-| 50k MAU | Fine | — |
-| No backups | Nothing to restore from | `pg_dump` on a schedule before any real data exists |
-| 2 projects | No spare environment | Use a separate Supabase org if a staging project is needed later |
-
----
-
-## 8. Invariants
-
-- RLS on for every table in `public`. No exceptions, no "temporarily off".
-- Clients **read their own rows and write nothing**. Practice writes will go
-  through `SECURITY DEFINER` functions with server-side validation.
-- No service-role key in the app, in Vercel, or in git history.
-- Display IDs (`GOW-…`) are labels, not credentials. The UUID is the key.
-- Both world profiles exist from the first second of an account's life, so no
-  code path ever has to invent a missing one.
+   account lands as *Pending approval*.
+4. Submit valid adult details → **straight to `/onboarding`** while verification
+   is paused (with verification on: confirmation email → link → `/onboarding`).
+5. The wizard will not let you past step 1 without a goal, and has no link back
+   to the site — only sign-out. That is deliberate.
+6. Finish setup → `/account` with a "Setup complete" banner, the summary of what
+   you chose, and three IDs: `GOW-USER-…`, `GOW-DEB-…`, `GOW-EXT-…`, each world
+   at rating 1000 / XP 0.
+7. Reload `/onboarding` now → redirected to `/account`. Setup is one-way until
+   you choose *Edit answers*.
+8. Sign out → `/signin` → sign back in → lands on `/account`, not the wizard.
+9. In the SQL editor, `select * from public.accounts;` returns exactly one row
+   per sign-up — no duplicates, no orphans. And:
+   `select public.learner_brief(id) from public.accounts order by created_at desc limit 1;`
+   returns the paragraph the AI will be given.

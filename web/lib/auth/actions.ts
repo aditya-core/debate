@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/env";
+import { REQUIRE_EMAIL_CONFIRMATION } from "@/lib/auth/config";
 import {
   ADULT_AGE,
   MIN_AGE,
@@ -143,11 +144,13 @@ export async function signUpAction(
   const requiresGuardian = age < ADULT_AGE;
 
   const supabase = await createServerSupabase();
-  const { error } = await supabase.auth.signUp({
+  const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
-      emailRedirectTo: `${await origin()}/auth/callback`,
+      // Lands on the callback, which exchanges the code then sends the learner
+      // straight into the compulsory setup wizard.
+      emailRedirectTo: `${await origin()}/auth/callback?next=/onboarding`,
       // Picked up by the `on_auth_user_created` trigger, which creates the
       // account, both world profiles and any guardian-consent record in one
       // transaction. See supabase/migrations/0001_identity.sql
@@ -164,6 +167,11 @@ export async function signUpAction(
 
   if (error) {
     const message = error.message.toLowerCase();
+
+    // The real cause goes to the server log; the learner gets a sentence. A
+    // signup form is not a place to publish Postgres or SMTP internals.
+    console.error("[signup] supabase signUp failed:", error.code, error.message);
+
     if (message.includes("already registered") || message.includes("already exists")) {
       // Deliberate: the same destination a new sign-up gets. A different
       // response here would turn the form into an oracle for "does this person
@@ -171,16 +179,45 @@ export async function signUpAction(
       // holding minors' data.
       redirect(`/signup/check-email?email=${encodeURIComponent(email)}`);
     }
-    if (error.status === 429) {
+    if (error.status === 429 || message.includes("rate limit")) {
       return {
         status: "error",
         message: "Too many attempts. Give it a minute and try again.",
+      };
+    }
+    if (message.includes("sending confirmation email") || message.includes("smtp")) {
+      return {
+        status: "error",
+        message:
+          "We created nothing — our mail sender isn't configured yet, so the confirmation email can't go out. This is ours to fix, not yours.",
+      };
+    }
+    if (message.includes("database error") || message.includes("saving new user")) {
+      return {
+        status: "error",
+        message:
+          "The database rejected the new user. The identity migrations (0001 → 0004) probably haven't been applied to this project yet.",
       };
     }
     return {
       status: "error",
       message: "We couldn't create your account. Please try again.",
     };
+  }
+
+  // ---- signed in already? then Supabase has "Confirm email" turned off ----
+  //
+  // The session in the response is the honest signal, not our flag: it is what
+  // Supabase actually did. The flag only decides whether that is a problem
+  // worth shouting about. See lib/auth/config.ts (D-077).
+  if (data.session) {
+    if (REQUIRE_EMAIL_CONFIRMATION) {
+      console.warn(
+        "[signup] REQUIRE_EMAIL_CONFIRMATION is on but Supabase returned a session. " +
+          "Turn on 'Confirm email' in Authentication → Sign In / Providers → Email.",
+      );
+    }
+    redirect("/onboarding");
   }
 
   redirect(`/signup/check-email?email=${encodeURIComponent(email)}&guardian=${requiresGuardian ? "1" : "0"}`);
@@ -224,6 +261,24 @@ export async function signInAction(
       status: "error",
       message: "Those details don't match an account.",
     };
+  }
+
+  // Setup is compulsory, so a learner who never finished it cannot reach the
+  // account page by signing in again.
+  const { data: account } = await supabase
+    .from("accounts")
+    .select("id")
+    .eq("auth_user_id", (await supabase.auth.getUser()).data.user?.id ?? "")
+    .maybeSingle<{ id: string }>();
+
+  if (account) {
+    const { data: learner } = await supabase
+      .from("learner_profiles")
+      .select("completed_at")
+      .eq("account_id", account.id)
+      .maybeSingle<{ completed_at: string | null }>();
+
+    if (!learner?.completed_at) redirect("/onboarding");
   }
 
   redirect("/account");

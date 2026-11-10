@@ -918,3 +918,114 @@ sign-up (D-065), same reason: on a platform holding minors' data, an oracle for
 still no project. The migration's own §7 contains the queries that prove it, and
 `docs/SUPABASE-SETUP.md` now lists 0003 as step 3c with the "nobody is missing a
 world identity" check.
+
+---
+
+### S-18 — 2026-11-10 — Verification, a forced setup, and a profile an AI can use
+
+**Aditya's ask, in order:** the "Create my account" button throws an error; email
+verification should happen; the person should then be registered with their
+unique ID *and* the two sub-IDs; then straight into onboarding, compulsory and
+non-skippable; and whatever they type should be stored in a shape that is easy to
+feed to an AI later.
+
+**On the error: I could not reproduce it, so I did not guess a fix.** The action
+deliberately swallowed Supabase's message and returned "We couldn't create your
+account." That was right for the learner and useless for us. Now the real
+`error.code` + message go to the server log, and the UI distinguishes the three
+causes that actually occur:
+
+| Log line | What it means |
+|---|---|
+| `email_send_failed` / "sending confirmation email" | No SMTP sender — see D-076 |
+| "database error saving new user" | Migrations not applied |
+| `429` | Rate limit |
+
+**D-073 — the gate is the server's, not the browser's.**
+"Non-skippable" is enforced in three independent places: the sign-in action, the
+auth callback, and `/account` itself (which redirects to `/onboarding` before
+rendering). A client-side redirect would be theatre — anyone can type a URL. The
+wizard also has no link back to the site, only sign-out: a link out is an
+invitation to skip.
+
+**D-074 — typed columns, raw snapshot, one brief.**
+`learner_profiles` stores goals, experience, comfort (1–5), preparing-for text,
+topics, minutes/day, preferred window and an optional deadline as **typed,
+constrained columns** — queryable for scheduling and cohort statistics. The raw
+submission is kept beside them in `answers jsonb`, so a future wizard change
+never loses what someone actually said. `learner_brief(account_id)` returns one
+stable paragraph for prompt injection, so every Stage 5 feature asks the same
+question the same way instead of five call sites re-deriving the shape.
+
+**D-075 — one write path.**
+There is no insert/update policy on the table and DML is revoked. The only way in
+is `complete_onboarding(jsonb)`, which validates, normalises and stamps
+`completed_at`. A client that skipped the questions cannot set that timestamp,
+and re-completing keeps the *first* completion time.
+
+**D-076 — verification makes email a launch blocker.**
+The built-in sender reaches only members of the Supabase organisation. With
+confirmation now compulsory, no real person can register until SMTP exists
+(Brevo 300/day or Gmail ~500/day, both free, neither needing a domain). Recorded
+in `docs/SUPABASE-SETUP.md` §5 with provider settings; A-08 in `docs/SECURITY.md`
+now says launch blocker rather than footnote.
+
+**Fixed while building (M-024).** `border-line-strong` was used in the wizard but
+`--color-line-strong` was never registered in the Tailwind theme — the border
+would have silently rendered as nothing. Caught by the class-coverage check
+before it shipped; token added to `@theme inline`.
+
+**Verified**
+- Build clean, **12 routes**; `/onboarding` dynamic.
+- Style audit **7/7** routes unchanged (new surfaces are auth-gated, so they are
+  covered by the class check below rather than by the public crawl).
+- New check: **224 class tokens** across the wizard, onboarding page and account
+  page all resolve in the compiled CSS (this is what found M-024).
+- Guard: `/onboarding`, `/onboarding?edit=1` → `307` to `/signin` (no session);
+  `/account` still renders its not-configured notice.
+- `npm test` 7/7, `tsc --noEmit` clean.
+
+**Not verified, plainly:** the migration has not run against a real Postgres —
+there is still no project. The wizard's actual appearance has not been seen in a
+browser; no headless browser exists in this sandbox. Both need Aditya's machine
+and the Supabase project.
+
+---
+
+### S-19 — 2026-11-10 — Verification paused, not removed
+
+**Aditya's instruction:** keep the email verification system, but on halt — turn
+it on when he says. Procced with the rest.
+
+**D-077 — one flag, two switches, and the session is the truth.**
+`web/lib/auth/config.ts` holds `REQUIRE_EMAIL_CONFIRMATION`, off by default and
+overridable with `NEXT_PUBLIC_REQUIRE_EMAIL_CONFIRMATION=true`. Nothing was
+deleted: the callback route, the check-email page and the confirmation
+`emailRedirectTo` all still exist.
+
+The important design choice: the sign-up action does not believe the flag, it
+believes Supabase. If the response carries a session, "Confirm email" is off in
+the dashboard and the learner goes to `/onboarding`; if it carries none, a mail
+is on its way and they go to `/signup/check-email`. The flag only decides
+whether that state is a problem worth shouting about — and if the two disagree
+(flag on, Supabase still off) the action logs a warning instead of quietly
+letting unverified accounts through.
+
+Two switches, both required to verify: the flag and the dashboard toggle. Doing
+one is how you end up with a "verified" account that never saw a mail.
+
+**Cost of the pause, written down rather than assumed:** anyone can register an
+address they don't own. Acceptable while the only accounts are ours, unacceptable
+at launch. A-08 in `docs/SECURITY.md` now says exactly that, and `/signup` shows
+a visible "While we build: email verification is switched off" note so the state
+is never a surprise.
+
+**Verified**
+- Flag `true` → the note is absent from `/signup`; flag `false` → present. Two
+  production builds, checked over HTTP both ways.
+- Build clean, style audit 7/7, `npm test` 7/7, `tsc` clean, 224 class tokens in
+  the new surfaces all resolve.
+
+**Not verified:** the sign-up *branch* itself has not run against a live project
+(there is still no database), so "session returned → /onboarding" is proven by
+reading the code and by the two build-time states, not by an observed signup.
