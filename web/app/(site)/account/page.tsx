@@ -3,6 +3,13 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { isSupabaseConfigured } from "@/lib/env";
 import { createServerSupabase, getSessionUser } from "@/lib/supabase/server";
+import {
+  EXPERIENCE_LABELS,
+  GOAL_LABELS,
+  TOPIC_LABELS,
+  WINDOW_LABELS,
+  type OnboardingAnswers,
+} from "@/lib/onboarding/schema";
 
 export const metadata: Metadata = {
   title: "Your account — Gift of Words",
@@ -21,6 +28,18 @@ type AccountRow = {
   created_at: string;
 };
 
+type LearnerRow = {
+  goals: string[];
+  experience: string;
+  comfort: number;
+  preparing_for: string | null;
+  topics: string[];
+  minutes_per_day: number;
+  practice_window: string;
+  target_date: string | null;
+  completed_at: string | null;
+};
+
 type WorldRow = {
   display_id: string;
   rating: number;
@@ -30,9 +49,9 @@ type WorldRow = {
 export default async function AccountPage({
   searchParams,
 }: {
-  searchParams: Promise<{ password?: string }>;
+  searchParams: Promise<{ password?: string; onboarded?: string }>;
 }) {
-  const { password: passwordState } = await searchParams;
+  const { password: passwordState, onboarded } = await searchParams;
   if (!isSupabaseConfigured) {
     return (
       <Notice
@@ -60,6 +79,18 @@ export default async function AccountPage({
       />
     );
   }
+
+  // Onboarding is compulsory. Anyone who slipped past the wizard is sent back
+  // to it here, on the server, before this page renders a single byte.
+  const { data: learner } = await supabase
+    .from("learner_profiles")
+    .select(
+      "goals, experience, comfort, preparing_for, topics, minutes_per_day, practice_window, target_date, completed_at",
+    )
+    .eq("account_id", account.id)
+    .maybeSingle<LearnerRow>();
+
+  if (!learner?.completed_at) redirect("/onboarding");
 
   const [{ data: debate }, { data: extempore }] = await Promise.all([
     supabase
@@ -93,6 +124,18 @@ export default async function AccountPage({
           </button>
         </form>
       </header>
+
+      {onboarded === "1" ? (
+        <div className="mt-6 rounded-xl border border-mint/35 bg-mint/10 px-4 py-3.5">
+          <p className="font-display text-[0.68rem] uppercase tracking-[0.16em] text-mint-text">
+            Setup complete
+          </p>
+          <p className="mt-1.5 text-[0.86rem] leading-relaxed text-muted">
+            Your practice is tuned to what you told us. Change it whenever you
+            like — nothing here is final.
+          </p>
+        </div>
+      ) : null}
 
       {passwordState === "changed" ? (
         <div className="mt-6 rounded-xl border border-mint/35 bg-mint/10 px-4 py-3.5">
@@ -146,6 +189,62 @@ export default async function AccountPage({
           <Detail label="Name" value={account.full_name ?? "—"} />
           <Detail label="Member since" value={formatDate(account.created_at)} />
         </dl>
+      </section>
+
+      <section className="mt-8 rounded-2xl border border-line bg-surface p-5 sm:p-6">
+        <div className="flex flex-wrap items-baseline justify-between gap-3">
+          <p className="font-display text-[0.68rem] uppercase tracking-[0.16em] text-faint">
+            Your setup
+          </p>
+          <Link
+            href="/onboarding?edit=1"
+            className="link-underline text-[0.78rem] text-muted hover:text-fg"
+          >
+            Edit answers
+          </Link>
+        </div>
+
+        <dl className="mt-4 grid gap-4 sm:grid-cols-2">
+          <Detail
+            label="Here for"
+            value={learner.goals
+              .map((g) => GOAL_LABELS[g as OnboardingAnswers["goals"][number]]?.label ?? g)
+              .join(", ") || "—"}
+          />
+          <Detail
+            label="Starting point"
+            value={`${
+              EXPERIENCE_LABELS[learner.experience as OnboardingAnswers["experience"]]?.label ??
+              learner.experience
+            } · confidence ${learner.comfort}/5`}
+          />
+          <Detail
+            label="Topics"
+            value={
+              learner.topics
+                .map((t) => TOPIC_LABELS[t as OnboardingAnswers["topics"][number]] ?? t)
+                .join(", ") || "We choose for you"
+            }
+          />
+          <Detail
+            label="Rhythm"
+            value={`${learner.minutes_per_day} min a day, ${
+              WINDOW_LABELS[learner.practice_window as OnboardingAnswers["practiceWindow"]]?.toLowerCase() ??
+              learner.practice_window
+            }`}
+          />
+        </dl>
+
+        {learner.preparing_for ? (
+          <div className="mt-4 rounded-xl border border-line bg-surface-2 px-4 py-3">
+            <p className="font-display text-[0.62rem] uppercase tracking-[0.16em] text-faint">
+              Working towards
+            </p>
+            <p className="mt-1 text-[0.86rem] leading-relaxed text-fg">
+              {learner.preparing_for}
+            </p>
+          </div>
+        ) : null}
       </section>
 
       <p className="mt-10 font-display text-[0.7rem] uppercase tracking-[0.2em] text-faint">

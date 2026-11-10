@@ -106,6 +106,7 @@
   --color-muted: var(--c-muted);
   --color-faint: var(--c-faint);
   --color-line: var(--c-line);
+  --color-line-strong: var(--c-line-strong);
   --color-brand: var(--c-brand);
   --color-brand-soft: var(--c-brand-soft);
   --color-sky: var(--c-sky);

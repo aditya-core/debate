@@ -67,7 +67,7 @@ These cannot be fixed from this repository.
 | A-05 | **Protect preview deployments** in Vercel. | Previews are public URLs. Before launch, they should need a login. |
 | A-06 | **Schedule a `pg_dump`.** | The free tier has **no backups**. One bad migration and the first cohort is gone. A nightly dump to storage we control costs nothing. |
 | A-07 | **Decide session lifetime.** Supabase's refresh cookie currently lives up to 400 days. | Long-lived sessions on shared school devices are a risk. 30 days is a defensible default for this product. |
-| A-08 | **Email provider** (Q-016). | Until SMTP exists, confirmation mail reaches nobody, which means the verification step is not actually happening. |
+| A-08 | **Email provider** (Q-016). | Verification is now compulsory in code — sign-up cannot reach the app without a confirmed link — but without custom SMTP the mail reaches nobody, so no real account can be created. Launch blocker, not a nice-to-have. |
 
 ---
 
