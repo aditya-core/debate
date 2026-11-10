@@ -856,3 +856,65 @@ first", which is the only thing anyone needs at that moment.
 
 **Verified:** build clean, 7/7 tests, style audit 6/6, `tsc` clean, guard exits
 correctly in both directions.
+
+---
+
+### S-17 — 2026-11-10 — Where the worlds will write, and a way back in
+
+**Aditya asked for two things:** a migration he can paste that gives the two
+sub-identities somewhere to store their data and analytics, with the contents
+decided later — and "real auth".
+
+**On the sub-IDs:** they already existed. `0001` creates `GOW-DEB` and `GOW-EXT`
+in the same transaction as the account. What was missing was a *guarantee* and a
+*place to write*.
+
+**D-069 — one definition of "an account has both identities".**
+`0003` adds `ensure_world_profiles(account)`, backfills every existing account
+missing one of the pair, and rewrites `handle_new_user()` to create them through
+that same function. Before this, the invariant lived only inside one trigger; if
+an account ever arrived another way — a manual insert, a repair script, a future
+admin tool — a half-provisioned user was silently possible. Now it is not.
+
+**D-070 — `payload jsonb`, deliberately.**
+`debate_sessions` and `extempore_sessions` carry id, account, world profile,
+start/end timestamps and a JSON payload. I am *not* inventing columns for prompt,
+rubric or score before the arena decides what those mean; a schema guessed today
+is a migration regretted in March. When the rubric lands, those become real typed
+columns and the payload stays as the raw capture behind them. The tables are
+read-your-own, and no client can write: rounds will be opened and closed by
+server-side functions that enforce the rules.
+
+**D-071 — analytics is world-scoped and client-invisible.**
+`analytics_events` keys on `account_id`, `world` (`account` / `debate` /
+`extempore`) and the world profile when one applies. RLS is on with **zero
+policies**, and even `select` is revoked: this is our data about the product, not
+a student's data about themselves, and the two should not share a door.
+
+**D-072 — real auth now includes the way back in.**
+Sign-up, confirmation, sign-in and sign-out were already wired. The hole was
+recovery: forget your password and the account was gone. Added `/signin/forgot`
+and `/account/update-password`, connected by
+`redirectTo = /auth/callback?next=/account/update-password`, so the recovery link
+exchanges its code and lands on the form with a session.
+
+The reset request **never reveals whether an account exists** — same rule as
+sign-up (D-065), same reason: on a platform holding minors' data, an oracle for
+"does this person study here?" is a privacy leak.
+
+**Verified** (production build, port 3000)
+
+- Build clean, 11 routes; `/signin/forgot` prerenders static,
+  `/account/update-password` is dynamic.
+- Style audit now covers **7 routes**: `/` 324 · `/develop` 196 · `/legal` 147 ·
+  `/signup` 154 · `/signin` 137 · `/signin/forgot` 128 · `check-email` 130 — all
+  matched.
+- `/account/update-password` with no session → `307` to `/signin?state=link`
+  (and `state=unconfigured` without credentials), exactly as intended.
+- `/signin` carries the "Forgot your password?" link; `/signin/forgot` renders
+  the email form.
+
+**Not verified:** none of the SQL has run against a real Postgres — there is
+still no project. The migration's own §7 contains the queries that prove it, and
+`docs/SUPABASE-SETUP.md` now lists 0003 as step 3c with the "nobody is missing a
+world identity" check.

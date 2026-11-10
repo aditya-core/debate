@@ -62,6 +62,15 @@ export default function SignInForm() {
         </div>
       </div>
 
+      <div className="flex justify-end">
+        <Link
+          href="/signin/forgot"
+          className="link-underline text-[0.78rem] text-faint hover:text-fg"
+        >
+          Forgot your password?
+        </Link>
+      </div>
+
       <button
         type="submit"
         disabled={pending}
