@@ -246,8 +246,8 @@ address nobody has proven they own — recorded as A-08 in `docs/SECURITY.md`.
 ## 5b. When it doesn't work: `npm run doctor`
 
 Two switches must agree — the mode in `.env.local` and "Confirm email" in the
-Supabase dashboard. When they disagree, sign-up silently falls back to the old
-link page, which is the least useful thing it could do. So there is a check:
+Supabase dashboard. When they disagree, sign-up refuses rather than pretending a
+link was sent. There is also a check:
 
 ```bash
 cd web && npm run doctor

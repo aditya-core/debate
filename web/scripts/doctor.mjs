@@ -10,7 +10,7 @@
  *
  *   true   Supabase hands back a session at sign-up. Our six-digit code can run.
  *   false  Supabase refuses the session until its own link is clicked. Our code
- *          never starts, and the learner is sent to the old check-email page.
+ *          never starts, and sign-up shows a configuration error.
  *
  * This is a read-only check with the public anon key. It changes nothing.
  */
@@ -124,7 +124,7 @@ if (mode === "otp" && !autoconfirm) {
       "",
       "    Supabase is still requiring its own confirmation link, so signUp()",
       "    returns no session — the six-digit flow never starts, and the learner",
-      "    is sent to /signup/check-email instead.",
+      "    is shown a configuration error instead of the code screen.",
       "",
       "    Fix: Supabase → Authentication → Sign In / Providers → Email →",
       "         turn Confirm email OFF, then Save, then restart the dev server.",

@@ -110,7 +110,8 @@ export async function signUpAction(
   // form, so we return the same destination a real sign-up gets and create
   // nothing. Silent by design — telling a bot it failed just teaches it.
   if (String(formData.get("company") ?? "").trim() !== "") {
-    redirect("/signup/check-email");
+    // Same destination a real sign-up gets. Nothing is created either way.
+    redirect("/verify");
   }
 
   const raw = {
@@ -138,6 +139,23 @@ export async function signUpAction(
   const requiresGuardian = age < ADULT_AGE;
 
   const supabase = await createServerSupabase();
+
+  /**
+   * The only two ways into the product from here: the code step, or (when
+   * verification is off) setup. There is no link-confirmation path any more —
+   * /signup/check-email was deleted with D-085.
+   */
+  async function enterApp(): Promise<never> {
+    if (VERIFICATION_ENABLED) {
+      const issued = await issueVerificationCode();
+      if (issued.error) {
+        console.error("[signup] could not deliver verification code:", issued.error);
+      }
+      redirect("/verify");
+    }
+    redirect("/onboarding");
+  }
+
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
@@ -167,11 +185,17 @@ export async function signUpAction(
     console.error("[signup] supabase signUp failed:", error.code, error.message);
 
     if (message.includes("already registered") || message.includes("already exists")) {
-      // Deliberate: the same destination a new sign-up gets. A different
-      // response here would turn the form into an oracle for "does this person
-      // have an account?", which is exactly what nobody wants on a platform
-      // holding minors' data.
-      redirect(`/signup/check-email?email=${encodeURIComponent(email)}`);
+      // The address has an account. Do not say so — instead ask the only
+      // question that settles it without becoming an existence oracle: does the
+      // password they just typed open it?
+      const retry = await supabase.auth.signInWithPassword({ email, password });
+      if (!retry.error) return await enterApp();
+
+      return {
+        status: "error",
+        message:
+          "We couldn't create an account with those details. If you already have one, sign in — or use Forgot password.",
+      };
     }
     if (error.status === 429 || message.includes("rate limit")) {
       return {
@@ -199,48 +223,59 @@ export async function signUpAction(
     };
   }
 
-  // ---- signed in already? then Supabase has "Confirm email" turned off ----
-  //
-  // The session in the response is the honest signal, not our flag: it is what
-  // Supabase actually did. The flag only decides whether that is a problem
-  // worth shouting about. See lib/auth/config.ts (D-077).
-  if (data.session) {
-    // Our own six-digit code, generated in Postgres and mailed by us (0005).
-    // Supabase's own confirmation must stay OFF in this mode — otherwise the
-    // learner gets two verifications and we send the wrong mail.
-    if (VERIFICATION_ENABLED) {
-      const issued = await issueVerificationCode();
-      if (issued.error) {
-        console.error("[signup] could not deliver verification code:", issued.error);
-      }
-      redirect("/verify");
-    }
-    redirect("/onboarding");
-  }
+  if (data.session) await enterApp();
 
-  // No session means Supabase is still demanding its own confirmation link.
-  // In OTP mode that is a configuration fault, not a user path: say so here
-  // instead of sending the learner to a page about a link we never sent.
-  if (VERIFICATION_ENABLED) {
+  // ---------------------------------------------------------------------
+  // No session. Supabase does this in two very different situations and does
+  // not tell us which:
+  //
+  //   1. The address already has an account. It returns the user with an empty
+  //      `identities` array and no session, so a sign-up form cannot be used to
+  //      discover who is registered.
+  //   2. "Confirm email" is ON, so no session until its own link is clicked.
+  //
+  // Sending the learner to a page about a link we never sent was the old
+  // behaviour (M-030); it is gone. Instead, retry with the password we were
+  // given: the owner of the account proves it by knowing it, and a stranger
+  // learns nothing.
+  // ---------------------------------------------------------------------
+  const { error: retryError } = await supabase.auth.signInWithPassword({ email, password });
+
+  if (retryError) {
     console.error(
-      [
-        "",
-        "[signup] CONFIGURATION FAULT — six-digit verification cannot start.",
-        "  Supabase returned no session, so 'Confirm email' is still ON.",
-        "  Fix: Authentication → Sign In / Providers → Email → Confirm email OFF,",
-        "       save, then restart the dev server.  (npm run doctor checks this.)",
-        "",
-      ].join("\n"),
+      "[signup] no session and the password did not open an existing account:",
+      retryError.status,
+      retryError.message,
     );
+
+    if (/confirm/i.test(retryError.message)) {
+      // Their account exists but is unconfirmed: Supabase is still asking for
+      // its own link. Nothing about that can be fixed from here.
+      console.error(
+        [
+          "",
+          "[signup] CONFIGURATION FAULT — six-digit verification cannot start.",
+          "  Supabase requires its own confirmation link ('Confirm email' is ON).",
+          "  Fix: Authentication → Sign In / Providers → Email → Confirm email OFF.",
+          "       npm run doctor verifies it.",
+          "",
+        ].join("\n"),
+      );
+      return {
+        status: "error",
+        message:
+          "Email verification isn't set up correctly on our side, so we can't send you a code yet. This is ours to fix — try again later.",
+      };
+    }
 
     return {
       status: "error",
       message:
-        "Email verification isn't set up correctly on our side, so we can't send you a code yet. This is ours to fix — please try again later.",
+        "We couldn't create an account with those details. If you already have one, sign in — or use Forgot password.",
     };
   }
 
-  redirect(`/signup/check-email?email=${encodeURIComponent(email)}&guardian=${requiresGuardian ? "1" : "0"}`);
+  return await enterApp();
 }
 
 const signInSchema = z.object({

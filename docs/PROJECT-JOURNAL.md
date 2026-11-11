@@ -1235,3 +1235,45 @@ looking like a green light.
 **The remaining gap is his to close, and it is two lines:** set
 `NEXT_PUBLIC_EMAIL_VERIFICATION_MODE=otp`, and swap the SMTP password for the
 API key from the **API Keys** tab.
+
+---
+
+### S-24 — 2026-11-10 — The link flow is gone
+
+**Aditya's instruction:** stop the old link verification entirely and leave only
+the Brevo code path.
+
+**Why it kept appearing, even with `mailer_autoconfirm true`.** Supabase hides
+"this email already exists" by returning the user with an **empty `identities`
+array and no session** — the same shape it uses when confirmation is required.
+His address had been signed up several times, so every attempt landed in the
+no-session branch and fell through to a page that had no business existing.
+
+**M-030 — a fallback that outlives its reason.**
+The check-email page was correct when links were the design. Once codes replaced
+them it became a trap: it told people to open a mail nobody had sent, and its
+`Config fault` banner blamed the wrong switch. Deleting it is the fix. A dead
+path kept "just in case" is a bug with good intentions.
+
+**D-085 — prove ownership with the password, not with a page.**
+When sign-up returns no session, the action now retries
+`signInWithPassword(email, password)`. If it succeeds, the person demonstrably
+owns the account and continues into the code step. If it fails, they get one
+generic sentence — no oracle for "is this address registered?", the rule from
+D-065, and no invented mail either.
+
+Deleted with this change: the `/signup/check-email` route, its copy, its audit
+entry, and every redirect into it. The honeypot now redirects to `/verify` like a
+real sign-up.
+
+**Verified**
+- `/signup/check-email?email=a@b.com` → **404**; build lists 12 routes, the route
+  is gone from the manifest.
+- `/verify` still 307s to sign-in without a session; `/signup` renders.
+- Style audit now covers **6 routes** (324 / 196 / 147 / **155** / 137 / 128) — no
+  dead entry left behind in the script.
+- `npm test` 7/7 + `"use server"` guard, `tsc` clean.
+
+**Not verified:** the retry-with-password branch itself, because it needs a real
+Supabase project with an existing account. That is exactly the case Aditya has,
+so the next sign-up attempt is the test.

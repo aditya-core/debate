@@ -22,7 +22,6 @@ const ROUTES = [
   "/signup",
   "/signin",
   "/signin/forgot",
-  "/signup/check-email?email=you@example.com&guardian=1",
 ];
 
 // `group` / `peer` are markers used by variant selectors and never have rules.
