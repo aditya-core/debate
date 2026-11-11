@@ -48,7 +48,7 @@ Verified after the change: CSP and the other headers are present on `/`,
   cookie-consent problem to solve — yet. Adding analytics later re-opens both.
 - **Server actions never echo input back into HTML.** React escapes by
   construction; the only reflected values are `?email=` and `?state=` on the
-  check-email and sign-in screens, both rendered as text, not markup.
+  the sign-in screen, rendered as text, not markup.
 - **No PII in logs.** We log nothing. Next's own error output is the only
   channel, and it does not receive form values.
 
