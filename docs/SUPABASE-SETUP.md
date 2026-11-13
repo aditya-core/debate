@@ -92,7 +92,12 @@ enforced by a partial unique index. Clients have no access to the table at all;
 `issue_email_otp()` and `verify_email_otp()` are the only doors, and the resend
 cooldown is enforced in SQL rather than in the button.
 
-All five files are idempotent (`if not exists`, `create or replace`, `drop
+**3f. `supabase/migrations/0006_secure_pending_verification.sql`** — paste the
+whole file → **Run**. This lets the signed-in verification flow read its own
+pending-verification details through a narrowly scoped security-definer
+function; direct access to `email_otps` remains revoked.
+
+All six files are idempotent (`if not exists`, `create or replace`, `drop
 policy if exists`), so re-running any of them is safe. If a statement errors,
 read the first line of the message — it names the object.
 

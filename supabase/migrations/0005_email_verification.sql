@@ -227,8 +227,8 @@ create or replace function public.my_pending_verification()
 returns table (account_id uuid, email text, full_name text, verified boolean, expires_at timestamptz, resend_after int)
 language plpgsql
 stable
-security invoker
-set search_path = public
+security definer
+set search_path = ''
 as $$
 declare
   v_account uuid;
@@ -237,7 +237,9 @@ begin
     return;
   end if;
 
-  select id into v_account from public.accounts where auth_user_id = auth.uid();
+  select a.id into v_account
+    from public.accounts a
+   where a.auth_user_id = auth.uid();
   if v_account is null then
     return;
   end if;
@@ -259,6 +261,7 @@ begin
 end;
 $$;
 
+revoke execute on function public.my_pending_verification() from public, anon;
 grant execute on function public.my_pending_verification() to authenticated;
 
 -- ---------------------------------------------------------------------------
