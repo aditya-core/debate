@@ -6,7 +6,6 @@ import { z } from "zod";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/env";
 import { VERIFICATION_ENABLED } from "@/lib/auth/config";
-import { issueVerificationCode } from "@/lib/auth/otp";
 import {
   ADULT_AGE,
   MIN_AGE,
@@ -147,10 +146,6 @@ export async function signUpAction(
    */
   async function enterApp(): Promise<never> {
     if (VERIFICATION_ENABLED) {
-      const issued = await issueVerificationCode();
-      if (issued.error) {
-        console.error("[signup] could not deliver verification code:", issued.error);
-      }
       redirect("/verify");
     }
     redirect("/onboarding");

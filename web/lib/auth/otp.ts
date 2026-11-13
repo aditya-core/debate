@@ -8,7 +8,7 @@ export type IssuedCode = {
   resendAfter: number;
   email: string | null;
   name: string | null;
-  error?: "no-account" | "no-sender" | "provider-error";
+  error?: "no-account" | "no-sender" | "provider-error" | "system-error";
 };
 
 /**
@@ -24,11 +24,31 @@ export async function issueVerificationCode(): Promise<IssuedCode> {
   const { data, error } = await supabase.rpc("issue_email_otp");
   if (error) {
     console.error("[otp] issue_email_otp failed:", error.code, error.message);
-    return { generated: false, sent: false, dev: false, resendAfter: 0, email: null, name: null };
+    return {
+      generated: false,
+      sent: false,
+      dev: false,
+      resendAfter: 0,
+      email: null,
+      name: null,
+      error: "system-error",
+    };
   }
 
   const row = Array.isArray(data) ? data[0] : data;
-  const { data: pendingRows } = await supabase.rpc("my_pending_verification");
+  const { data: pendingRows, error: pendingError } = await supabase.rpc("my_pending_verification");
+  if (pendingError) {
+    console.error("[otp] my_pending_verification failed:", pendingError.code, pendingError.message);
+    return {
+      generated: false,
+      sent: false,
+      dev: false,
+      resendAfter: 0,
+      email: null,
+      name: null,
+      error: "system-error",
+    };
+  }
   const pending = Array.isArray(pendingRows) ? pendingRows[0] : pendingRows;
 
   if (!pending) {

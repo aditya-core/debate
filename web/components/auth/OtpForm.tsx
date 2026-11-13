@@ -10,12 +10,12 @@ export default function OtpForm({
   maskedEmail,
   initialResendAfter,
   devPreview,
-  senderMissing,
+  deliveryError,
 }: {
   maskedEmail: string;
   initialResendAfter: number;
   devPreview: boolean;
-  senderMissing: boolean;
+  deliveryError: string | null;
 }) {
   const router = useRouter();
   const [digits, setDigits] = useState<string[]>(Array(LENGTH).fill(""));
@@ -152,9 +152,9 @@ export default function OtpForm({
   return (
     <div>
       <p className="text-[0.9rem] leading-relaxed text-muted">
-        We sent six digits to{" "}
-        <span className="font-medium text-fg">{maskedEmail}</span>. They expire in ten
-        minutes.
+        {deliveryError ? "We couldn't send a code to " : "We sent six digits to "}
+        <span className="font-medium text-fg">{maskedEmail}</span>
+        {deliveryError ? "." : ". They expire in ten minutes."}
       </p>
 
       {dev ? (
@@ -165,13 +165,12 @@ export default function OtpForm({
         </p>
       ) : null}
 
-      {senderMissing ? (
+      {deliveryError ? (
         <p
           role="alert"
           className="mt-4 rounded-xl border border-flare/35 bg-flare-soft px-3.5 py-2.5 text-[0.8rem] leading-relaxed text-fg"
         >
-          Our mail sender isn&apos;t configured, so no code can leave. This is ours
-          to fix, not yours.
+          {deliveryError}
         </p>
       ) : null}
 

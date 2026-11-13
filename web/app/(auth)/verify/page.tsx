@@ -45,7 +45,16 @@ export default async function VerifyPage() {
   // makes a reload harmless, and it means a learner who navigated away still
   // gets a fresh code without hunting for a button.
   const issued = await issueVerificationCode();
-  const senderMissing = issued.error === "no-sender" || issued.error === "provider-error";
+  const deliveryError =
+    issued.error === "no-sender"
+      ? "Our mail sender isn't configured, so no code was sent. This is ours to fix."
+      : issued.error === "provider-error"
+        ? "Our email service couldn't send your code. Please try again after the resend timer."
+        : issued.error === "system-error"
+          ? "We couldn't prepare your verification code because of a server error. Please try again later."
+          : issued.error === "no-account"
+            ? "We couldn't find a verification record for this account. Sign out and sign in again."
+            : null;
 
   return (
     <div className="relative isolate flex min-h-[100svh] items-center justify-center overflow-hidden px-5 py-16">
@@ -71,7 +80,7 @@ export default async function VerifyPage() {
             maskedEmail={maskEmail(issued.email ?? ctx.account.email)}
             initialResendAfter={issued.resendAfter}
             devPreview={issued.dev}
-            senderMissing={senderMissing}
+            deliveryError={deliveryError}
           />
         </div>
 
