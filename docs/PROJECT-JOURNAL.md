@@ -1277,3 +1277,55 @@ real sign-up.
 **Not verified:** the retry-with-password branch itself, because it needs a real
 Supabase project with an existing account. That is exactly the case Aditya has,
 so the next sign-up attempt is the test.
+
+---
+
+### S-25 — 2026-11-13 — Verification works, and the reason it didn't was mine
+
+**The bug was a privilege declaration, not a configuration.** `my_pending_verification()`
+was written `security invoker` against tables that have RLS on with no policies and
+DML revoked. Under the caller's own rights it could read nothing, so it returned zero
+rows, and `issueVerificationCode()` translated "zero rows" into "no account" — which
+the screen rendered as "our mail sender isn't configured". The sender was fine the
+whole time. Aditya found it, and his fix is the right one: `security definer` with
+`set search_path = ''`, `revoke execute … from public, anon`, `grant … to authenticated`,
+and the same function shipped as `0006` so a database that already ran `0005` gets
+the hardened version without a rebuild.
+
+**D-087 withdrawn — verification stays.** The deletion instruction was mine to carry
+out and now mine to undo: `5c7e9b9` is reverted in `ddb90e1`, and `8df6042` is merged
+in `af039c9`. The branch is now a strict superset of `main`: everything he pushed,
+plus the legal work, plus the metadataBase fix. Nothing of his was modified.
+
+What stayed from the withdrawn work, because it was never about verification:
+
+| Kept | Why |
+|---|---|
+| "Who runs this" on `/legal` | names Forge Digital as the operator (D-088) |
+| Privacy discloses the code flow | "a hash, never the code, ten minutes, five attempts" |
+| `security@giftofwords.app` | matches the root `SECURITY.md` |
+| §5c domain setup, free-mailbox warning in `doctor` | the sender is still Gmail; this is how that gets fixed |
+
+**D-086 still stands** — Forge Digital is the agency, the app lives at
+`app.forgedigital.online` (CNAME to Vercel), HostKarle keeps the agency site, DNS
+and business email. Path routing stays rejected.
+
+**M-031 — I diagnosed a privilege bug as a settings problem, three times.**
+I blamed the Supabase "Confirm email" toggle, then the Brevo key prefix, then the
+sender address — all plausible, all wrong, all consistent with the symptom, because
+each of them *also* produces "no session" or "no mail". The cheap test I never ran:
+call the function as a normal logged-in user and look at the row count. A function
+that reads locked tables must prove it can read them before its emptiness means
+anything. **An empty result is not evidence of absence unless the reader had the
+right to see the rows.**
+
+**Verified on this branch**
+- Build clean; `/verify` 307s to sign-in when signed out (route exists again);
+  `/legal` renders "Who runs this"; `npm test` 7/7 + `"use server"` guard;
+  style audit 6/6; `tsc` clean; `node --check scripts/doctor.mjs` OK.
+- **Unverified here:** an actual Brevo send. His environment is the only place
+  that can prove delivery, and it has.
+
+**Open, one line:** sender is `myprofile8959@gmail.com` — works, spam-prone.
+§5c is the fix, twenty minutes of DNS. `0006` must be run before the flow works
+on a database that only had `0005`.

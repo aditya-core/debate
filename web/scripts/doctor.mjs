@@ -75,7 +75,28 @@ const keyShape = !brevoKey
       : { ok: false, note: `${brevoKey.slice(0, 12)}… ✗ unrecognised — should start xkeysib-` };
 
 line("Brevo API key", keyShape.note, keyShape.ok);
-line("EMAIL_FROM", from || "(missing)", undefined);
+const FREE_MAILBOXES = [
+  "gmail.com",
+  "googlemail.com",
+  "outlook.com",
+  "hotmail.com",
+  "live.com",
+  "yahoo.com",
+  "yahoo.in",
+  "icloud.com",
+  "proton.me",
+  "rediffmail.com",
+];
+const fromDomain = (from.split("@")[1] ?? "").trim().toLowerCase();
+const usingFreeMailbox = FREE_MAILBOXES.includes(fromDomain);
+
+line(
+  "EMAIL_FROM",
+  from
+    ? `${from}${usingFreeMailbox ? "  ⚠ free mailbox" : ""}`
+    : "(missing)",
+  from ? !usingFreeMailbox : undefined,
+);
 
 /* ------------------------------------------------------- 2. what Supabase does */
 if (!url || !anon) {
@@ -189,8 +210,27 @@ if (mode === "off") {
   );
 }
 
+if (usingFreeMailbox && mode === "otp" && brevoKey) {
+  console.log(
+    [
+      "",
+      "  ! The sender is a free mailbox, so delivery is a coin toss.",
+      "",
+      "    Brevo will send it, and a large share of these land in spam —",
+      "    sometimes silently, which then looks like a broken app.",
+      "    Fix: Brevo → Senders & Domains → authenticate a domain you own,",
+      "         then set EMAIL_FROM to an address on that domain.",
+      "",
+    ].join("\n"),
+  );
+}
+
 if (mode === "otp" && autoconfirm && brevoKey && from) {
-  console.log("\n  ✓ Configuration looks right. Sign up with a fresh address.\n");
+  console.log(
+    usingFreeMailbox
+      ? "\n  ✓ Configuration is sound. Delivery depends on the spam folder.\n"
+      : "\n  ✓ Configuration looks right. Sign up with a fresh address.\n",
+  );
 }
 
 if (problems === 0 && mode === "otp" && (!brevoKey || !from)) {
