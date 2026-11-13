@@ -40,21 +40,30 @@ docs/        the thinking: product brief, architecture, decision journal
 web/         the Next.js application (deployed to Vercel)
   app/
     (site)/    /, /develop, /legal, /account — marketing nav + full footer
-    (auth)/    /signup, /signin — no nav, no footer, one line of legal links
+    (auth)/    /signup, /signin, /verify — no nav, no footer
+    (app)/     /dashboard — signed-in shell: rail on desktop, thumb bar on phones
+    (onboarding)/ /onboarding — the compulsory setup wizard
+    (welcome)/ /welcome — the first rep: one prompt, one timer
     auth/      /auth/callback, /auth/signout (URLs, not a route group)
   components/
     sections/  Hero, Marquee, Problem, HowItWorks, Worlds, SkillData,
                Scorecard, Vision, FinalCTA, LiveDemo
     charts/    Radar, Bars, Sparkline — hand-built SVG, no chart library
     motion/    Magnetic, CountUp, Typewriter, Waveform, SpotlightCursor
-    auth/      AuthShell, SignUpForm, SignInForm, SetupNotice
+    auth/      AuthShell, SignUpForm, SignInForm, SetupNotice, OtpForm
+    app/       AppNav — one list, two shapes
+    dashboard/ Dashboard, WeekChart
+    practice/  FirstRep, PrepTimer, SpeechCapture
   lib/
     auth/      server actions + the age/password rules both sides share
+    onboarding/prompts-adjacent schema + the one write path
+    practice/  prompts, calibration, capture, metrics
+    dashboard/ data.ts (one read) + guide.ts (rule-based advice)
     supabase/  cookie-bound clients (anon key only)
   proxy.ts     session refresh
   public/fonts self-hosted woff2 (latin subset)
 supabase/
-  migrations/  0001_identity.sql — accounts, two world profiles, RLS
+  migrations/  0001–0007 — identity, worlds, onboarding, verification, captures
 ```
 
 ## Where the reasoning lives

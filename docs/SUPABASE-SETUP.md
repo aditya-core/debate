@@ -97,7 +97,17 @@ whole file → **Run**. This lets the signed-in verification flow read its own
 pending-verification details through a narrowly scoped security-definer
 function; direct access to `email_otps` remains revoked.
 
-All six files are idempotent (`if not exists`, `create or replace`, `drop
+**3g. `supabase/migrations/0007_speech_captures.sql`** — paste the whole file →
+**Run**. Creates the table that holds the optional spoken baseline as text, plus
+the two functions that are the only way in or out of it (`save_speech_capture`,
+`my_latest_capture`). Rows self-expire after seven days; a purge runs on every
+write.
+
+The dashboard reads that table, so without this migration the home page still
+renders but the baseline card stays empty. That is the intended failure: a
+missing piece degrades, it does not error.
+
+All seven files are idempotent (`if not exists`, `create or replace`, `drop
 policy if exists`), so re-running any of them is safe. If a statement errors,
 read the first line of the message — it names the object.
 

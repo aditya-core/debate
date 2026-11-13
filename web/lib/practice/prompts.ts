@@ -313,6 +313,8 @@ export type PickInput = {
   day: string;
   /** Changes when the learner asks for another. */
   take?: number;
+  /** A world card asked for this format specifically. */
+  format?: PromptFormat;
 };
 
 export function preferredFormat(goals: readonly string[]): PromptFormat {
@@ -325,8 +327,9 @@ export function pickPrompt({
   goals,
   day,
   take = 0,
+  format: forcedFormat,
 }: PickInput): PromptChoice {
-  const format = preferredFormat(goals);
+  const format = forcedFormat ?? preferredFormat(goals);
 
   const byTopic = PROMPTS.filter((p) => topics.includes(p.topic));
   const byFormat = PROMPTS.filter((p) => p.format === format);
