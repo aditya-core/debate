@@ -62,7 +62,7 @@ export default function AppNav({ variant }: { variant: "side" | "bottom" }) {
               href={item.href}
               aria-current={active ? "page" : undefined}
               className={[
-                "flex items-center gap-2.5 rounded-xl px-3 py-2 font-display text-[0.82rem] transition-colors",
+                "flex items-center gap-2.5 rounded-lg px-2 py-2 font-display text-[0.82rem] transition-colors",
                 active
                   ? "border border-brand/30 bg-brand-soft text-fg"
                   : "border border-transparent text-muted hover:bg-surface-2 hover:text-fg",

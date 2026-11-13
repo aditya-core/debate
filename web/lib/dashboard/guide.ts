@@ -1,4 +1,4 @@
-import type { DashboardData } from "@/lib/dashboard/data";
+import { WORLD_LABELS, type DashboardData, type World } from "@/lib/dashboard/types";
 import { CALIBRATION_SECONDS } from "@/lib/practice/calibration";
 import { wordsPerMinute } from "@/lib/practice/metrics";
 
@@ -19,9 +19,11 @@ export type GuideItem = {
   cta: string;
 };
 
-export function buildGuide(data: DashboardData): GuideItem[] {
+export function buildGuide(data: DashboardData, world: World): GuideItem[] {
   const items: GuideItem[] = [];
   const { capture, totals, learner } = data;
+  const stat = data.worlds[world];
+  const worldName = WORLD_LABELS[world].name;
 
   if (!capture) {
     items.push({
@@ -38,10 +40,10 @@ export function buildGuide(data: DashboardData): GuideItem[] {
       href: "/welcome",
       cta: "Start today's rep",
     });
-  } else if (totals.streak === 0) {
+  } else if (stat.reps === 0) {
     items.push({
-      title: "Today is still empty",
-      body: `You have ${totals.reps} ${totals.reps === 1 ? "rep" : "reps"} behind you and none today. ${learner.minutesPerDay} minutes was the promise — one rep counts.`,
+      title: `${worldName} is still untouched`,
+      body: `You have ${totals.reps} ${totals.reps === 1 ? "rep" : "reps"} in the other world and none here. Ratings only move in the world that produced the rep — this one is still at its starting line.`,
       href: "/welcome",
       cta: "Do one rep",
     });
