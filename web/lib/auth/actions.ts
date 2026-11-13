@@ -331,7 +331,7 @@ export async function signInAction(
     if (!learner?.completed_at) redirect("/onboarding");
   }
 
-  redirect("/account");
+  redirect("/dashboard");
 }
 
 /* ------------------------------------------------------------------------- */

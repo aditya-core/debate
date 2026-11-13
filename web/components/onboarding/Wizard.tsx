@@ -2,6 +2,12 @@
 
 import { useActionState, useState } from "react";
 import { completeOnboardingAction } from "@/lib/onboarding/actions";
+import SpeechCapture from "@/components/practice/SpeechCapture";
+import {
+  CALIBRATION_PROMPT,
+  CALIBRATION_PROMPT_ID,
+  CALIBRATION_SECONDS,
+} from "@/lib/practice/calibration";
 import {
   EMPTY_ANSWERS,
   EXPERIENCE_LABELS,
@@ -23,6 +29,10 @@ const STEPS = [
   { title: "Where are you starting from?", note: "Be honest — it changes what we give you." },
   { title: "What should we put in front of you?", note: "Optional, but it makes practice feel like yours." },
   { title: "How much time will you give this?", note: "A promise you can keep beats one you can't." },
+  {
+    title: "One optional minute",
+    note: "A spoken baseline — the only question everyone answers, so day one has a starting line. Skip it if you'd rather.",
+  },
   { title: "One last look", note: "You can change any of this later." },
 ] as const;
 
@@ -55,6 +65,9 @@ export default function Wizard({
     ...initial,
   });
   const [step, setStep] = useState(0);
+  // The baseline lives above the capture card so it survives moving to review.
+  const [transcript, setTranscript] = useState("");
+  const [captureMs, setCaptureMs] = useState(0);
   const [state, formAction, pending] = useActionState(completeOnboardingAction, INIT);
 
   const canContinue = stepIsValid(step, answers);
@@ -135,6 +148,10 @@ export default function Wizard({
 
         <form action={formAction} className="mt-8">
           <input type="hidden" name="answers" value={JSON.stringify(answers)} />
+          <input type="hidden" name="transcript" value={transcript} />
+          <input type="hidden" name="durationMs" value={captureMs} />
+          <input type="hidden" name="captureSource" value={captureMs > 0 ? "speech" : "typed"} />
+          <input type="hidden" name="promptId" value={CALIBRATION_PROMPT_ID} />
 
           {/* ---------------- step 1: goals ---------------- */}
           {step === 0 ? (
@@ -405,8 +422,31 @@ export default function Wizard({
             </div>
           ) : null}
 
-          {/* ---------------- step 5: review ---------------- */}
+          {/* ---------------- step 5: the optional baseline ---------------- */}
           {step === 4 ? (
+            <div className="space-y-4">
+              <SpeechCapture
+                promptTitle={CALIBRATION_PROMPT.title}
+                beats={CALIBRATION_PROMPT.beats}
+                seconds={CALIBRATION_SECONDS}
+                text={transcript}
+                onText={setTranscript}
+                onDuration={(ms) => setCaptureMs((prev) => Math.max(prev, ms))}
+              />
+
+              <p className="rounded-xl border border-line bg-surface-2 px-4 py-3 text-[0.78rem] leading-relaxed text-muted">
+                This is the one question every learner answers, which is what makes
+                it a baseline rather than a test. The words are stored as text for
+                seven days, then deleted; audio never leaves your device.{" "}
+                <span className="text-fg">
+                  Press Continue with the box empty to skip — nothing is locked.
+                </span>
+              </p>
+            </div>
+          ) : null}
+
+          {/* ---------------- step 6: review ---------------- */}
+          {step === 5 ? (
             <div className="space-y-5">
               <dl className="divide-y divide-line rounded-2xl border border-line bg-surface">
                 <Row label="Here for" value={answers.goals.map((g) => GOAL_LABELS[g].label).join(", ")} />
@@ -431,6 +471,14 @@ export default function Wizard({
                   value={`${answers.minutesPerDay} min a day, ${WINDOW_LABELS[
                     answers.practiceWindow
                   ].toLowerCase()}${answers.targetDate ? ` · by ${answers.targetDate}` : ""}`}
+                />
+                <Row
+                  label="Baseline"
+                  value={
+                    transcript.trim()
+                      ? `${transcript.trim().split(/\s+/).length} words recorded`
+                      : "Skipped — you can add it later"
+                  }
                 />
                 <Row label="Account" value={accountId} mono />
               </dl>

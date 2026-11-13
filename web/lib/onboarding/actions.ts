@@ -5,6 +5,7 @@ import { isSupabaseConfigured } from "@/lib/env";
 import { getAccountContext } from "@/lib/auth/guard";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { onboardingSchema } from "@/lib/onboarding/schema";
+import { saveCapture, type CaptureSource } from "@/lib/practice/capture";
 
 import type { OnboardingState } from "@/lib/onboarding/state";
 /**
@@ -77,5 +78,26 @@ export async function completeOnboardingAction(
   }
 
   // The first rep, not a receipt. Setup ends by handing over something to do.
-  redirect("/welcome");
+  // -------------------------------------------------------------------------
+  // The optional baseline. Written after the profile, because a lost transcript
+  // must never cost someone their setup — so a failure here is logged and the
+  // learner still lands on their dashboard.
+  // -------------------------------------------------------------------------
+  const transcript = String(formData.get("transcript") ?? "").trim().slice(0, 4000);
+  const promptId = String(formData.get("promptId") ?? "").trim().slice(0, 64);
+  const durationMs = Math.max(0, Math.min(600_000, Number(formData.get("durationMs") ?? 0) || 0));
+  const source: CaptureSource = formData.get("captureSource") === "speech" ? "speech" : "typed";
+
+  if (transcript.length > 0 && promptId.length > 0) {
+    await saveCapture({
+      kind: "calibration",
+      promptId,
+      transcript,
+      durationMs,
+      source,
+    });
+  }
+
+  // Home. /welcome is a place you visit from here, not a corridor you must pass.
+  redirect("/dashboard");
 }

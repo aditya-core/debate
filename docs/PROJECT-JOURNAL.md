@@ -1387,3 +1387,90 @@ narrow phone before this is called done.
 
 **Next.** The arena itself: a saved rep, scored on structure, evidence, clarity
 and pace. `/welcome` already produces the exact inputs that slice needs.
+
+---
+
+### S-27 — 2026-11-13 — The home screen, and a baseline that records words instead of audio
+
+**The question he asked** was which to build first, dashboard or the evaluating
+brain. He answered it himself — dashboard — and he is right, for a reason worth
+writing down: **the brain has nowhere to put its output until there is a screen
+that reads it.** Scores with no home are a table nobody sees.
+
+**D-091 — the dashboard is the home, and its order is the argument.**
+`/dashboard`, in the signed-in shell. Sign-in now lands here, onboarding finishes
+here, and `/account` is settings rather than a destination.
+
+Order top to bottom: what to do today → the four numbers → what the guide thinks
+→ the two worlds → the week. **Numbers come after the action on purpose.** A new
+account has nothing but zeros, and a screen that opens with zeros reads as
+failure; a screen that opens with a prompt reads as day one. The stat tiles say
+"provisional" next to both ratings because 1000 is a starting value, not a
+measurement.
+
+**D-092 — capture the transcript, not the audio.** He asked for text now with
+audio later, and that is the right sequencing for a reason beyond money: a minute
+of speech is roughly a megabyte, so every rep would be storage we pay for before
+the scoring is proven worth paying for. A transcript is a few kilobytes, is what
+any model reads anyway, and expires without anyone losing a score.
+
+`0007_speech_captures.sql`:
+
+| Decision | Why |
+|---|---|
+| Text only, `audio_path`/`audio_bytes` reserved | the row shape does not change when audio arrives |
+| Seven-day `expires_at`, purge inside the write function | retention without a cron job or a bill |
+| RLS on, **no policies**, table privileges revoked | the functions are the only doors; there is no path even by accident |
+| `security definer` + `set search_path = ''`, scoped to `auth.uid()` | the caller can only ever read or write their own row |
+| 20 captures per account per day | browser transcription is free to the client and costs us a row |
+| Empty transcripts rejected, whitespace collapsed | word counts are computed from this row; newlines would inflate them |
+
+The capability check itself is **one prompt for everybody** — "a time you changed
+your mind", sixty seconds — because a baseline is only comparable if the task is
+the same. Personalisation starts after it.
+
+**In the UI:** transcription is browser-side (`SpeechRecognition`, `en-IN`), so no
+audio ever reaches us and it costs nothing to run. The transcript is **editable**,
+because recognition mishears names and nobody should be scored on Google's
+spelling of their own sentence. Chrome kills the stream after a pause, so the
+component restarts it while the clock is running — a thinking pause must not
+silently truncate the answer. Browsers without the API get a textarea and the same
+flow, labelled honestly.
+
+**D-093 — the guide is rule-based, and says so.** He asked for the mentor to live
+on the home screen. A chat box that cannot answer would be the first lie the
+product tells, so what ships is a small honest engine: it reads the baseline that
+exists or doesn't, the reps that exist or don't, the streak that is real, and the
+comfort level they declared — and returns two things to do, each linked. The card
+is labelled "rule-based for now" in the UI, not just in the docs, and the footnote
+says the mentor arrives with the arena.
+
+**M-032 — a harness is a component, and components have import rules.**
+The preview harness passed `onText`/`onDuration` to a client component from a
+server component ("event handlers cannot be passed"), and once made a client it
+pulled `guide.ts → capture.ts → next/headers` and failed the build. Fix was
+structural, not cosmetic: `wordsPerMinute` moved to `lib/practice/metrics.ts`, so
+anything the dashboard computes is importable from either side. A pure helper
+sitting in a module that talks to the network is a trap waiting for the first
+consumer who isn't a server component.
+
+**Verified**
+- Build clean, **15 routes**; `tsc` clean; `npm test` 7/7 + `"use server"` guard.
+- Dashboard + capture card audited through the harness with the **real shell**:
+  **217 classes, all matched**. Harness deleted before commit.
+- Copy read from the rendered HTML end to end: greeting, today's rep, four tiles,
+  guide with two items, baseline card, both worlds, week chart empty state.
+- `/dashboard`, `/welcome` → **307** to sign-in without a session; `/legal`,
+  `/` → 200; style audit 6/6 on public routes.
+
+**Unverified**
+- No browser here: the dashboard has not been *seen*, and **speech recognition
+  cannot be exercised at all** — it needs a mic and a real Chrome. The typed
+  fallback is exercisable and is what a test account should use first.
+- `0007` has never run against Postgres. It must be applied before the baseline
+  saves; a missing function is caught, logged, and does not block setup.
+- The streak maths and week buckets are unit-shaped but have no test file yet.
+
+**Next.** The arena: a saved rep, scored on structure, evidence, clarity and pace.
+`0007` already holds the transcript; the missing piece is a rubric and a score
+row, not a new pipeline.

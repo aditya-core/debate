@@ -23,9 +23,11 @@ export const dynamic = "force-dynamic";
 export default async function WelcomePage({
   searchParams,
 }: {
-  searchParams: Promise<{ take?: string }>;
+  searchParams: Promise<{ take?: string; format?: string }>;
 }) {
-  const { take: takeParam } = await searchParams;
+  const { take: takeParam, format: formatParam } = await searchParams;
+  const format =
+    formatParam === "debate" || formatParam === "extempore" ? formatParam : undefined;
   const take = Math.min(48, Math.max(0, Number.parseInt(takeParam ?? "0", 10) || 0));
 
   const { account, learner } = await requireOnboardedAccount();
@@ -42,6 +44,7 @@ export default async function WelcomePage({
     goals: learner.goals,
     day: new Date().toISOString().slice(0, 10),
     take,
+    format,
   });
 
   return (

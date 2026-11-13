@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Mark } from "./Nav";
+import { Mark } from "@/components/Mark";
 
 type Item = { label: string; href?: string; soon?: boolean };
 

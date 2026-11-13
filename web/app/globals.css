@@ -1093,3 +1093,37 @@ html.reveal-fallback .reveal {
     transition: none;
   }
 }
+
+/* ==================================================================
+   Signed-in surfaces — dashboard entrances, recording indicator
+   ------------------------------------------------------------------
+   Same stagger as the first-rep page so moving from setup into the app
+   feels like one continuous place rather than two products.
+   ================================================================== */
+
+.dash-rise {
+  animation: gow-welcome-rise 0.6s cubic-bezier(0.2, 0.85, 0.2, 1) both;
+}
+
+@keyframes gow-capture-pulse {
+  0%,
+  100% {
+    opacity: 0.5;
+    transform: scale(0.9);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+.capture-dot {
+  animation: gow-capture-pulse 1.2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dash-rise,
+  .capture-dot {
+    animation: none;
+  }
+}

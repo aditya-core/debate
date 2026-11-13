@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Mark } from "@/components/Nav";
+import { Mark } from "@/components/Mark";
 
 /**
  * Split layout shared by sign-up and sign-in: the identity model on the left,
