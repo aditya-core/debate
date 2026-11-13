@@ -1020,3 +1020,76 @@ html.reveal-fallback .reveal {
     transform: scaleX(1);
   }
 }
+
+/* ==================================================================
+   First rep — the welcome page and its timer
+   ------------------------------------------------------------------
+   Entrance is staggered so the page assembles itself rather than
+   appearing all at once; the ring is the only thing that moves while
+   a learner is thinking, and nothing here carries information that
+   exists nowhere else. Off under prefers-reduced-motion.
+   ================================================================== */
+
+@keyframes gow-welcome-rise {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes gow-welcome-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes gow-prep-dot {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(0.85);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+}
+
+.welcome-rise {
+  animation: gow-welcome-rise 0.72s cubic-bezier(0.2, 0.85, 0.2, 1) both;
+}
+
+.welcome-glow {
+  animation: gow-welcome-in 1.4s ease-out both;
+}
+
+.prep-dot {
+  animation: gow-prep-dot 1.6s ease-in-out infinite;
+}
+
+/* The countdown ticks four times a second; the transition turns that into a
+   sweep. Linear because an easing curve on a clock would lie about the time. */
+.prep-ring {
+  transition:
+    stroke-dashoffset 0.35s linear,
+    stroke 0.4s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .welcome-rise,
+  .welcome-glow,
+  .prep-dot {
+    animation: none;
+  }
+
+  .prep-ring {
+    transition: none;
+  }
+}

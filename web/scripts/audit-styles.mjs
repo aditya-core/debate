@@ -14,7 +14,13 @@
  * Exits non-zero if anything is missing. Run it against a running server.
  */
 
-const BASE = process.argv[2] ?? "http://localhost:3000";
+const ARGS = process.argv.slice(2);
+const BASE = ARGS.find((arg) => !arg.startsWith("--")) ?? "http://localhost:3000";
+// Extra routes: `--route=/preview-harness`. Session-gated pages cannot be
+// audited this way (they redirect), so a harness renders their markup instead.
+const EXTRA = ARGS
+  .filter((arg) => arg.startsWith("--route="))
+  .map((arg) => arg.slice("--route=".length));
 const ROUTES = [
   "/",
   "/develop",
@@ -22,6 +28,7 @@ const ROUTES = [
   "/signup",
   "/signin",
   "/signin/forgot",
+  ...EXTRA,
 ];
 
 // `group` / `peer` are markers used by variant selectors and never have rules.

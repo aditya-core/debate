@@ -76,5 +76,6 @@ export async function completeOnboardingAction(
     };
   }
 
-  redirect("/account?onboarded=1");
+  // The first rep, not a receipt. Setup ends by handing over something to do.
+  redirect("/welcome");
 }

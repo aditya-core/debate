@@ -1329,3 +1329,61 @@ right to see the rows.**
 **Open, one line:** sender is `myprofile8959@gmail.com` — works, spam-prone.
 §5c is the fix, twenty minutes of DNS. `0006` must be run before the flow works
 on a database that only had `0005`.
+
+---
+
+### S-26 — 2026-11-13 — Setup now ends in a sentence you have to say
+
+**The problem with the old ending.** Finishing the wizard redirected to
+`/account`: two world cards at rating 0, an account ID, and a summary of the
+answers just given. Accurate, and completely inert. A new learner had done five
+screens of work and received a receipt.
+
+**D-090 — onboarding ends at `/welcome`, and `/welcome` hands over one prompt.**
+The last step now opens a first rep: a prompt chosen from the topics they picked,
+the format their goal implies, a "why this one" line they can check against what
+they just answered, and a two-phase timer (think, then speak). Nothing is
+recorded or scored, and the page says so — the arena is where reps count, and
+pretending otherwise would be the first lie the product tells.
+
+| Piece | Where | Why it looks like that |
+|---|---|---|
+| 26 hand-written prompts | `lib/practice/prompts.ts` | A generated prompt is a promise we cannot keep offline. Each has title, brief, and **the hard part** — the objection they must meet. |
+| Deterministic pick | same file | `hash(display_id + day + format) + take`. Stable through a day, different per learner, and "give me a different one" always moves because `take` is added rather than hashed. |
+| Two-phase timer | `components/practice/PrepTimer.tsx` | 90s think / 150s speak for debate; 60/120 for extempore. Ring is the only moving thing; digits for anyone who needs a number. Ends by saying nothing was scored. |
+| Stripped chrome | `app/(welcome)/layout.tsx` | Same rule as onboarding: one exit forward, no nav inviting a detour. Theme toggle stays — 11pm is a real time to practise. |
+
+**Copy decisions, since copy is the product here.** The reason line is generated
+from the answers ("Because Economy was one of your topics, and you're here for
+Debate & MUN") — it has to be *true*, so it follows whichever pool the pick came
+from rather than flattering the learner. The timer's closing line is "nothing was
+recorded or scored — this was only to hear your own voice start", because a
+counter that implies grading would be a lie with a progress bar.
+
+**Motion.** Four staggered entrances (90/180/260ms), one soft radial wash behind
+the headline, a pulsing phase dot, and a ring that eases between ticks. All CSS
+keyframes, all switched off under `prefers-reduced-motion`. No parallax, no
+scroll-jacking: on a ₹15k phone the ring is the only thing animating, and it is
+`stroke-dashoffset` on one element.
+
+**Tooling.** `scripts/audit-styles.mjs` gained `--route=`, so session-gated pages
+can be audited through a harness that renders the same component with fixture
+values. The harness is deleted before commit; the flag stays because it is how
+this got checked at all.
+
+**Verified**
+- `/welcome` → **307** to sign-in when there is no session; `?take=2` same.
+- The rendered markup was audited through a harness: **131 classes, all matched**
+  by the served stylesheet (deleted afterwards; build now lists 14 routes).
+- Build clean, `tsc` clean, `npm test` 7/7 + `"use server"` guard, style audit
+  6/6 on the public routes.
+- Copy read end to end from the rendered HTML: prompt, brief, hard part, reason,
+  timer hint, both exits, and the three "made of" facts.
+
+**Unverified — and it matters:** no browser exists in this sandbox, so the page
+has not been *seen*. Layout, contrast and the timer's motion are reasoned, not
+observed. First task next session: open `/welcome` on the live deploy and on a
+narrow phone before this is called done.
+
+**Next.** The arena itself: a saved rep, scored on structure, evidence, clarity
+and pace. `/welcome` already produces the exact inputs that slice needs.
