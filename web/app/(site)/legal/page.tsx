@@ -10,19 +10,10 @@ export const metadata: Metadata = {
 
 const SECTIONS = [
   {
-    id: "who",
-    title: "Who runs this",
-    body: [
-      "Gift of Words is a product of Forge Digital (forgedigital.online). Forge Digital decides what data is collected and why, and is the point of contact for anything on this page.",
-      "Everything here applies to this product. Other Forge Digital products have their own notices, and buying something there does not create an account here.",
-    ],
-  },
-  {
     id: "privacy",
     title: "Privacy",
     body: [
-      "We collect the minimum needed to run the product: the email address you sign up with, your date of birth (only to determine whether parental consent applies), the answers you give during setup, and the practice sessions you create.",
-      "While we are in pre-release we do not verify email addresses. That means an account can exist for an address its owner has not proven. Verification goes live before the first public cohort, and this page will say so when it does.",
+      "We collect the minimum needed to run the product: the email address you sign up with, your date of birth (only to determine whether parental consent applies), and the practice sessions you create.",
       "Voice recordings exist to be scored. Raw audio is deleted after the score is produced; the transcript and the feedback are kept so your progress history remains intact. You can export or delete everything from your account.",
       "We do not sell data, and we do not use practice content for advertising.",
     ],
@@ -41,7 +32,6 @@ const SECTIONS = [
     body: [
       "Gift of Words is currently in a pre-release build. Features described on this site are being developed; nothing here is a promise of availability on a particular date.",
       "AI feedback is coaching, not examination. Scores are provided to help you improve and should not be treated as an assessment of your ability by any third party.",
-      "Accounts are for one person. Sharing a login means sharing a practice history and, if anything goes wrong, losing both.",
       "Do not use the platform to harass other participants, to record anyone without their consent, or to generate content that is unlawful.",
     ],
   },
@@ -66,7 +56,7 @@ const SECTIONS = [
     title: "Security",
     body: [
       "Access is authorised on the server for every request — never on the client. Identifiers are not credentials, and no request is trusted because it carries an ID.",
-      "If you believe you have found a vulnerability, write to security@giftofwords.app with enough detail to reproduce it. We will acknowledge within 72 hours.",
+      "If you believe you have found a vulnerability, write to hello@giftofwords.app with enough detail to reproduce it. We will acknowledge within 72 hours.",
     ],
   },
 ];
@@ -85,9 +75,9 @@ export default function LegalPage() {
       </p>
 
       <div className="mt-8 rounded-xl border border-line bg-surface-2 p-4 text-[0.82rem] leading-relaxed text-muted">
-        <strong className="font-medium text-fg">Draft v0.2 · 11 November 2026.</strong>{" "}
-        A product of Forge Digital. This page is a commitment, not yet a legal
-        instrument. Questions: hello@giftofwords.app.
+        <strong className="font-medium text-fg">Draft v0.1 · 9 November 2026.</strong>{" "}
+        This page is a commitment, not yet a legal instrument. Questions:
+        hello@giftofwords.app.
       </div>
 
       <nav aria-label="On this page" className="mt-10 flex flex-wrap gap-2">

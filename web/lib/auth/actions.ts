@@ -5,6 +5,8 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/env";
+import { VERIFICATION_ENABLED } from "@/lib/auth/config";
+import { issueVerificationCode } from "@/lib/auth/otp";
 import {
   ADULT_AGE,
   MIN_AGE,
@@ -109,7 +111,7 @@ export async function signUpAction(
   // nothing. Silent by design — telling a bot it failed just teaches it.
   if (String(formData.get("company") ?? "").trim() !== "") {
     // Same destination a real sign-up gets. Nothing is created either way.
-    redirect("/onboarding");
+    redirect("/verify");
   }
 
   const raw = {
@@ -139,10 +141,18 @@ export async function signUpAction(
   const supabase = await createServerSupabase();
 
   /**
-   * One destination: setup. Email verification was removed in D-087 — there is
-   * no code to type, no link to click, and no page in between.
+   * The only two ways into the product from here: the code step, or (when
+   * verification is off) setup. There is no link-confirmation path any more —
+   * /signup/check-email was deleted with D-085.
    */
   async function enterApp(): Promise<never> {
+    if (VERIFICATION_ENABLED) {
+      const issued = await issueVerificationCode();
+      if (issued.error) {
+        console.error("[signup] could not deliver verification code:", issued.error);
+      }
+      redirect("/verify");
+    }
     redirect("/onboarding");
   }
 
@@ -237,6 +247,26 @@ export async function signUpAction(
       retryError.status,
       retryError.message,
     );
+
+    if (/confirm/i.test(retryError.message)) {
+      // Their account exists but is unconfirmed: Supabase is still asking for
+      // its own link. Nothing about that can be fixed from here.
+      console.error(
+        [
+          "",
+          "[signup] CONFIGURATION FAULT — six-digit verification cannot start.",
+          "  Supabase requires its own confirmation link ('Confirm email' is ON).",
+          "  Fix: Authentication → Sign In / Providers → Email → Confirm email OFF.",
+          "       npm run doctor verifies it.",
+          "",
+        ].join("\n"),
+      );
+      return {
+        status: "error",
+        message:
+          "Email verification isn't set up correctly on our side, so we can't send you a code yet. This is ours to fix — try again later.",
+      };
+    }
 
     return {
       status: "error",
