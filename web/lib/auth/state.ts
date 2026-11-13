@@ -15,12 +15,3 @@ export type AuthState = {
 };
 
 export const INITIAL_STATE: AuthState = { status: "idle" };
-
-/** Result of a verification-code action. `verified` is terminal: the client
- *  plays the success animation and then navigates. */
-export type OtpState = {
-  status: "idle" | "error" | "sent" | "verified";
-  message?: string;
-  resendAfter?: number;
-  dev?: boolean;
-};

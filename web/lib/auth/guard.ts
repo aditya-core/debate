@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 import { isSupabaseConfigured } from "@/lib/env";
-import { VERIFICATION_ENABLED } from "@/lib/auth/config";
 import { createServerSupabase, getSessionUser } from "@/lib/supabase/server";
 
 export type AccountRow = {
@@ -10,7 +9,6 @@ export type AccountRow = {
   full_name: string | null;
   status: "active" | "pending_guardian_consent" | "suspended";
   created_at: string;
-  email_verified_at: string | null;
 };
 
 export type LearnerRow = {
@@ -51,7 +49,7 @@ export async function getAccountContext(): Promise<AccountContext | null> {
 
   const { data: account } = await supabase
     .from("accounts")
-    .select("id, display_id, email, full_name, status, created_at, email_verified_at")
+    .select("id, display_id, email, full_name, status, created_at")
     .eq("auth_user_id", user.id)
     .maybeSingle<AccountRow>();
 
@@ -74,11 +72,6 @@ export function hasOnboarded(ctx: AccountContext | null): boolean {
   return Boolean(ctx?.learner?.completed_at);
 }
 
-export function hasVerified(ctx: AccountContext | null): boolean {
-  // With verification off there is nothing to prove, so everyone counts.
-  if (!VERIFICATION_ENABLED) return true;
-  return Boolean(ctx?.account?.email_verified_at);
-}
 
 /**
  * For pages that must not be seen before onboarding finishes.
@@ -89,7 +82,6 @@ export async function requireOnboardedAccount(): Promise<AccountContext & { acco
 
   if (!ctx) redirect("/signin?state=expired");
   if (!ctx.account) redirect("/account");
-  if (!hasVerified(ctx)) redirect("/verify");
   if (!hasOnboarded(ctx)) redirect("/onboarding");
 
   return ctx as AccountContext & { account: AccountRow };

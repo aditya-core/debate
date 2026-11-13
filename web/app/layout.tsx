@@ -6,7 +6,9 @@ export const metadata: Metadata = {
   title: "Gift of Words — Unlock the power of your words",
   description:
     "An intelligent communication training experience for debate, extempore and thinking on your feet — with feedback specific enough to change how you speak.",
-  metadataBase: new URL("https://giftofwords.app"),
+  // Falls back to the domain we intend to own; NEXT_PUBLIC_SITE_URL wins once
+  // it exists, so canonical/OG URLs follow the deployment rather than a guess.
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://giftofwords.app"),
   openGraph: {
     title: "Gift of Words",
     description:

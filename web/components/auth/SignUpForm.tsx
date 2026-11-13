@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useActionState, useMemo, useState } from "react";
 import { signUpAction } from "@/lib/auth/actions";
 import { INITIAL_STATE } from "@/lib/auth/state";
-import { VERIFICATION_ENABLED } from "@/lib/auth/config";
 import {
   ADULT_AGE,
   MIN_AGE,
@@ -209,23 +208,11 @@ export default function SignUpForm() {
       </button>
 
       <p className="rounded-xl border border-line bg-surface-2 px-3.5 py-2.5 text-[0.74rem] leading-relaxed text-muted">
-        {VERIFICATION_ENABLED ? (
-          <>
-            <span className="font-display uppercase tracking-[0.12em] text-faint">
-              Next:
-            </span>{" "}
-            a six-digit code to your inbox. Nothing to click — just type the
-            digits on the next screen.
-          </>
-        ) : (
-          <>
-            <span className="font-display uppercase tracking-[0.12em] text-faint">
-              While we build:
-            </span>{" "}
-            email verification is switched off, so you&apos;ll go straight into
-            setup. It turns on before anyone outside the team can register.
-          </>
-        )}
+        <span className="font-display uppercase tracking-[0.12em] text-faint">
+          Next:
+        </span>{" "}
+        a short setup — five questions so practice fits you, not a generic
+        course. Takes about two minutes.
       </p>
 
       <p className="pt-1 text-center text-[0.78rem] text-faint">
