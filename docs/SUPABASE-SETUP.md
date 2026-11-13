@@ -274,6 +274,48 @@ Verdict
 Exit code 1 when something is wrong, 0 when it is safe to test. Read-only, anon
 key only, nothing is changed.
 
+## 5c. Sending from a domain you own
+
+The Gmail sender works, and a fair share of its mail goes to spam. Fixing that is
+a DNS job, not a code job.
+
+**1. Authenticate the domain in Brevo.** Senders & Domains → Domains → add
+`yourdomain.com` → it shows two DNS records:
+
+| Record | What it does |
+|---|---|
+| Brevo code (TXT) | proves you control the domain |
+| DKIM (TXT) | signs your mail so receivers can verify it |
+| SPF (TXT) | says Brevo may send on behalf of this domain — `v=spf1 include:spf.sendinblue.com ~all` |
+| DMARC (TXT, `_dmarc`) | start with `v=DMARC1; p=none; rua=mailto:you@yourdomain.com` |
+
+Add them at your DNS host. Brevo flips to **authenticated** once it sees them;
+often minutes, occasionally an hour.
+
+**2. Move `EMAIL_FROM` onto the domain.** It must be an address Brevo has
+verified — an alias or a real mailbox both work:
+
+```
+EMAIL_FROM=hello@yourdomain.com
+EMAIL_FROM_NAME=Gift of Words
+```
+
+Restart the server (`NEXT_PUBLIC_*` and env are read at boot) and run
+`npm run doctor`: a free mailbox is now called out explicitly, so a clean run
+means you are no longer sending from Gmail.
+
+**3. Point the app's own addresses at the real domain.** With the app on
+`app.yourdomain.com`:
+
+- Vercel → Projects → Settings → Domains → add it, then CNAME it at your DNS host.
+- Vercel env: `NEXT_PUBLIC_SITE_URL=https://app.yourdomain.com`, then redeploy so
+  `metadataBase` and the canonical URLs follow.
+- Supabase → Authentication → URL Configuration → **Site URL**:
+  `https://app.yourdomain.com`; add
+  `https://app.yourdomain.com/auth/callback` to Redirect URLs.
+
+Keep `p=none` on DMARC until mail is flowing, then tighten to `quarantine`.
+
 ## 6. Restart and verify
 
 `NEXT_PUBLIC_*` values are baked in at build time, so restart the server after

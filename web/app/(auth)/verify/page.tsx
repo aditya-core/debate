@@ -28,7 +28,7 @@ export default async function VerifyPage() {
           Your login exists, your account row doesn&apos;t.
         </h1>
         <p className="mt-3 text-[0.9rem] leading-relaxed text-muted">
-          Run the migrations (<code className="rounded bg-surface-2 px-1.5 py-0.5">0001 → 0005</code>)
+          Run the migrations (<code className="rounded bg-surface-2 px-1.5 py-0.5">0001 → 0006</code>)
           and reload.
         </p>
         <Link href="/" className="btn btn-outline btn-sm mt-7">

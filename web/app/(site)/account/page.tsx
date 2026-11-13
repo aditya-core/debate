@@ -51,9 +51,9 @@ type WorldRow = {
 export default async function AccountPage({
   searchParams,
 }: {
-  searchParams: Promise<{ password?: string; onboarded?: string }>;
+  searchParams: Promise<{ password?: string }>;
 }) {
-  const { password: passwordState, onboarded } = await searchParams;
+  const { password: passwordState } = await searchParams;
   if (!isSupabaseConfigured) {
     return (
       <Notice
@@ -130,18 +130,6 @@ export default async function AccountPage({
         </form>
       </header>
 
-      {onboarded === "1" ? (
-        <div className="mt-6 rounded-xl border border-mint/35 bg-mint/10 px-4 py-3.5">
-          <p className="font-display text-[0.68rem] uppercase tracking-[0.16em] text-mint-text">
-            Setup complete
-          </p>
-          <p className="mt-1.5 text-[0.86rem] leading-relaxed text-muted">
-            Your practice is tuned to what you told us. Change it whenever you
-            like — nothing here is final.
-          </p>
-        </div>
-      ) : null}
-
       {passwordState === "changed" ? (
         <div className="mt-6 rounded-xl border border-mint/35 bg-mint/10 px-4 py-3.5">
           <p className="font-display text-[0.68rem] uppercase tracking-[0.16em] text-mint-text">
@@ -194,6 +182,22 @@ export default async function AccountPage({
           <Detail label="Name" value={account.full_name ?? "—"} />
           <Detail label="Member since" value={formatDate(account.created_at)} />
         </dl>
+      </section>
+
+      <section className="mt-8 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-brand/30 bg-brand-soft p-5 sm:p-6">
+        <div className="min-w-0">
+          <p className="font-display text-[0.68rem] uppercase tracking-[0.16em] text-faint">
+            Your first rep
+          </p>
+          <p className="mt-1.5 max-w-[46ch] text-[0.86rem] leading-relaxed text-fg">
+            One prompt from your topics, with a prep timer. Nothing is scored —
+            it exists so the first thing you do here is speak, not configure.
+          </p>
+        </div>
+        <Link href="/welcome" className="btn btn-primary btn-sm">
+          Open it
+          <span aria-hidden="true">→</span>
+        </Link>
       </section>
 
       <section className="mt-8 rounded-2xl border border-line bg-surface p-5 sm:p-6">

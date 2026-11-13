@@ -1277,3 +1277,113 @@ real sign-up.
 **Not verified:** the retry-with-password branch itself, because it needs a real
 Supabase project with an existing account. That is exactly the case Aditya has,
 so the next sign-up attempt is the test.
+
+---
+
+### S-25 — 2026-11-13 — Verification works, and the reason it didn't was mine
+
+**The bug was a privilege declaration, not a configuration.** `my_pending_verification()`
+was written `security invoker` against tables that have RLS on with no policies and
+DML revoked. Under the caller's own rights it could read nothing, so it returned zero
+rows, and `issueVerificationCode()` translated "zero rows" into "no account" — which
+the screen rendered as "our mail sender isn't configured". The sender was fine the
+whole time. Aditya found it, and his fix is the right one: `security definer` with
+`set search_path = ''`, `revoke execute … from public, anon`, `grant … to authenticated`,
+and the same function shipped as `0006` so a database that already ran `0005` gets
+the hardened version without a rebuild.
+
+**D-087 withdrawn — verification stays.** The deletion instruction was mine to carry
+out and now mine to undo: `5c7e9b9` is reverted in `ddb90e1`, and `8df6042` is merged
+in `af039c9`. The branch is now a strict superset of `main`: everything he pushed,
+plus the legal work, plus the metadataBase fix. Nothing of his was modified.
+
+What stayed from the withdrawn work, because it was never about verification:
+
+| Kept | Why |
+|---|---|
+| "Who runs this" on `/legal` | names Forge Digital as the operator (D-088) |
+| Privacy discloses the code flow | "a hash, never the code, ten minutes, five attempts" |
+| `security@giftofwords.app` | matches the root `SECURITY.md` |
+| §5c domain setup, free-mailbox warning in `doctor` | the sender is still Gmail; this is how that gets fixed |
+
+**D-086 still stands** — Forge Digital is the agency, the app lives at
+`app.forgedigital.online` (CNAME to Vercel), HostKarle keeps the agency site, DNS
+and business email. Path routing stays rejected.
+
+**M-031 — I diagnosed a privilege bug as a settings problem, three times.**
+I blamed the Supabase "Confirm email" toggle, then the Brevo key prefix, then the
+sender address — all plausible, all wrong, all consistent with the symptom, because
+each of them *also* produces "no session" or "no mail". The cheap test I never ran:
+call the function as a normal logged-in user and look at the row count. A function
+that reads locked tables must prove it can read them before its emptiness means
+anything. **An empty result is not evidence of absence unless the reader had the
+right to see the rows.**
+
+**Verified on this branch**
+- Build clean; `/verify` 307s to sign-in when signed out (route exists again);
+  `/legal` renders "Who runs this"; `npm test` 7/7 + `"use server"` guard;
+  style audit 6/6; `tsc` clean; `node --check scripts/doctor.mjs` OK.
+- **Unverified here:** an actual Brevo send. His environment is the only place
+  that can prove delivery, and it has.
+
+**Open, one line:** sender is `myprofile8959@gmail.com` — works, spam-prone.
+§5c is the fix, twenty minutes of DNS. `0006` must be run before the flow works
+on a database that only had `0005`.
+
+---
+
+### S-26 — 2026-11-13 — Setup now ends in a sentence you have to say
+
+**The problem with the old ending.** Finishing the wizard redirected to
+`/account`: two world cards at rating 0, an account ID, and a summary of the
+answers just given. Accurate, and completely inert. A new learner had done five
+screens of work and received a receipt.
+
+**D-090 — onboarding ends at `/welcome`, and `/welcome` hands over one prompt.**
+The last step now opens a first rep: a prompt chosen from the topics they picked,
+the format their goal implies, a "why this one" line they can check against what
+they just answered, and a two-phase timer (think, then speak). Nothing is
+recorded or scored, and the page says so — the arena is where reps count, and
+pretending otherwise would be the first lie the product tells.
+
+| Piece | Where | Why it looks like that |
+|---|---|---|
+| 26 hand-written prompts | `lib/practice/prompts.ts` | A generated prompt is a promise we cannot keep offline. Each has title, brief, and **the hard part** — the objection they must meet. |
+| Deterministic pick | same file | `hash(display_id + day + format) + take`. Stable through a day, different per learner, and "give me a different one" always moves because `take` is added rather than hashed. |
+| Two-phase timer | `components/practice/PrepTimer.tsx` | 90s think / 150s speak for debate; 60/120 for extempore. Ring is the only moving thing; digits for anyone who needs a number. Ends by saying nothing was scored. |
+| Stripped chrome | `app/(welcome)/layout.tsx` | Same rule as onboarding: one exit forward, no nav inviting a detour. Theme toggle stays — 11pm is a real time to practise. |
+
+**Copy decisions, since copy is the product here.** The reason line is generated
+from the answers ("Because Economy was one of your topics, and you're here for
+Debate & MUN") — it has to be *true*, so it follows whichever pool the pick came
+from rather than flattering the learner. The timer's closing line is "nothing was
+recorded or scored — this was only to hear your own voice start", because a
+counter that implies grading would be a lie with a progress bar.
+
+**Motion.** Four staggered entrances (90/180/260ms), one soft radial wash behind
+the headline, a pulsing phase dot, and a ring that eases between ticks. All CSS
+keyframes, all switched off under `prefers-reduced-motion`. No parallax, no
+scroll-jacking: on a ₹15k phone the ring is the only thing animating, and it is
+`stroke-dashoffset` on one element.
+
+**Tooling.** `scripts/audit-styles.mjs` gained `--route=`, so session-gated pages
+can be audited through a harness that renders the same component with fixture
+values. The harness is deleted before commit; the flag stays because it is how
+this got checked at all.
+
+**Verified**
+- `/welcome` → **307** to sign-in when there is no session; `?take=2` same.
+- The rendered markup was audited through a harness: **131 classes, all matched**
+  by the served stylesheet (deleted afterwards; build now lists 14 routes).
+- Build clean, `tsc` clean, `npm test` 7/7 + `"use server"` guard, style audit
+  6/6 on the public routes.
+- Copy read end to end from the rendered HTML: prompt, brief, hard part, reason,
+  timer hint, both exits, and the three "made of" facts.
+
+**Unverified — and it matters:** no browser exists in this sandbox, so the page
+has not been *seen*. Layout, contrast and the timer's motion are reasoned, not
+observed. First task next session: open `/welcome` on the live deploy and on a
+narrow phone before this is called done.
+
+**Next.** The arena itself: a saved rep, scored on structure, evidence, clarity
+and pace. `/welcome` already produces the exact inputs that slice needs.
