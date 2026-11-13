@@ -1,7 +1,8 @@
 import type { AccountContext, AccountRow, LearnerRow } from "@/lib/auth/guard";
 import { createServerSupabase } from "@/lib/supabase/server";
-import { getLatestCapture, type CaptureRow } from "@/lib/practice/capture";
-import { pickPrompt, type Prompt } from "@/lib/practice/prompts";
+import { getLatestCapture } from "@/lib/practice/capture";
+import { pickPrompt } from "@/lib/practice/prompts";
+import type { DashboardData, WeekDay, World } from "@/lib/dashboard/types";
 
 /**
  * Everything the dashboard shows, in one read.
@@ -13,33 +14,14 @@ import { pickPrompt, type Prompt } from "@/lib/practice/prompts";
  *     500 — someone's home page should survive our deployment order.
  */
 
-export type WorldStat = {
-  rating: number;
-  xp: number;
-  reps: number;
-};
-
-export type WeekDay = { label: string; iso: string; reps: number };
-
-export type DashboardData = {
-  firstName: string | null;
-  displayId: string;
-  memberSince: string;
-  learner: {
-    goals: string[];
-    experience: string;
-    comfort: number;
-    topics: string[];
-    minutesPerDay: number;
-    practiceWindow: string;
-    targetDate: string | null;
-  };
-  worlds: { debate: WorldStat; extempore: WorldStat };
-  totals: { reps: number; streak: number; xp: number };
-  week: WeekDay[];
-  capture: CaptureRow | null;
-  today: Prompt;
-};
+export type {
+  CaptureSummary,
+  DashboardData,
+  WeekDay,
+  World,
+  WorldStat,
+} from "@/lib/dashboard/types";
+export { WORLD_LABELS } from "@/lib/dashboard/types";
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -119,12 +101,12 @@ export async function loadDashboard(
   const allDates = [...debateRows, ...extemporeRows].map((row) => isoDay(row.started_at));
 
   const now = new Date();
-  const today = pickPrompt({
+  const seed = {
     accountKey: ctx.account.display_id,
     topics: learner.topics,
     goals: learner.goals,
     day: isoDay(now),
-  });
+  };
 
   return {
     firstName: ctx.account.full_name?.trim().split(/\s+/)[0] ?? null,
@@ -156,8 +138,14 @@ export async function loadDashboard(
       streak: streakFrom(allDates, now),
       xp: (debateProfile.data?.xp ?? 0) + (extemporeProfile.data?.xp ?? 0),
     },
-    week: weekFrom(allDates, now),
+    week: {
+      debate: weekFrom(debateRows.map((row) => isoDay(row.started_at)), now),
+      extempore: weekFrom(extemporeRows.map((row) => isoDay(row.started_at)), now),
+    },
     capture,
-    today: today.prompt,
+    today: {
+      debate: pickPrompt({ ...seed, format: "debate" }).prompt,
+      extempore: pickPrompt({ ...seed, format: "extempore" }).prompt,
+    },
   };
 }

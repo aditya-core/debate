@@ -1474,3 +1474,60 @@ consumer who isn't a server component.
 **Next.** The arena: a saved rep, scored on structure, evidence, clarity and pace.
 `0007` already holds the transcript; the missing piece is a rubric and a score
 row, not a new pipeline.
+
+---
+
+### S-28 — 2026-11-13 — Dashboard redesigned; two worlds, one screen; and the logo was invisible
+
+**The blind spot closed.** Chromium cannot be downloaded from Google's CDN in this
+sandbox, but `@sparticuz/chromium` ships a headless build **inside its npm tarball**,
+and npm is reachable. With `LD_LIBRARY_PATH` pointed at the libs it unpacks, the app
+can now be screenshotted: any route, any viewport, light or dark, with clicks. Every
+design claim from here on is a claim about a rendered page.
+
+**M-033 — the wordmark rendered as nothing, everywhere.** Three separate causes,
+each sufficient on its own:
+1. `stop-color="var(--c-brand)"` — CSS custom properties do **not** resolve in SVG
+   presentation attributes; they must be `style`.
+2. Default `objectBoundingBox` gradient units — every path in the mark is a
+   horizontal line, so its bounding box has **zero height** and the gradient has
+   nothing to paint across. Now `userSpaceOnUse`.
+3. Two `<Mark>`s on one page shared `id="gow-mark"`; the hidden desktop one won
+   the lookup. Now `useId()`.
+
+Consequence worth stating: the logo has been invisible on the landing page, auth
+pages and footer for as long as it has existed. Nobody could see it, so nobody
+reported it. **A screenshot would have caught it in one second.**
+
+**D-094 — one screen, two worlds, Debate first.** The dashboard now owns a
+segmented switch (Debate | Extempore), defaulting to Debate. Both worlds are
+resolved on the server and handed over together, so switching is a state change,
+not a navigation: rating, reps, XP, the weekly series, the prompt and the guide all
+swap in place. The streak stays global, because days are global.
+
+**D-095 — one surface, everything else on the canvas.** The first version was nine
+identical bordered cards, six uppercase eyebrows and three empty-state apologies —
+it read as a settings page. Now:
+
+| Element | Decision |
+|---|---|
+| Hero | the only filled surface, inverted (`bg-fg` / `text-canvas`), so it holds the eye in both themes; accent glow is per-world |
+| Numbers | four metrics set directly on the canvas with hairline dividers — no boxes |
+| Baseline | one line: "not recorded yet · Record the 60-second check →" instead of a column of prose |
+| Guide | two items side by side on desktop, the second one-line on phones |
+| Week | dots for empty days, bars for real ones, capped at 38rem so seven points do not span a metre |
+
+**Fixes found by looking, not by reasoning:** two stacked sticky bars on mobile
+(96px of chrome before the first sentence) merged into one; four metrics that
+repeated each other ("this week" duplicated the chart) replaced with four that
+don't; "provisional" collided with the next tile's label; the hero's buttons
+wrapped into the meta row on phones; the shell's max-width made the desktop
+gutters lopsided (224px rail + centred 1180px container).
+
+**Screenshots** (`/home/user/shots/`, not committed): `dash8-mobile.png`,
+`dash7-desktop.png`, `dash9-extempore.png`, `dash9-dark.png`,
+`bar-clip4.png` (the mark, working).
+
+**Still unverified:** real session data (the harness uses fixtures with 3 reps;
+production shows zeros), and the switch on a real phone (touch target 96×30 is
+borderline).
