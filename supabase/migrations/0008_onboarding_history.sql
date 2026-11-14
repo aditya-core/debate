@@ -107,15 +107,16 @@ as $$
   with me as (
     select a.id from public.accounts a where a.auth_user_id = auth.uid()
   )
-  select c.id,
-         case when c.kind = 'calibration' then 'baseline' else 'rep' end,
-         null::text,
-         c.prompt_id,
-         c.word_count,
-         c.duration_ms,
-         c.source,
-         c.created_at,
-         c.expires_at
+  select c.id                                  as id,
+         case when c.kind = 'calibration'
+              then 'baseline' else 'rep' end   as kind,
+         null::text                            as world,
+         c.prompt_id                           as prompt_id,
+         c.word_count                          as word_count,
+         c.duration_ms                         as duration_ms,
+         c.source                              as source,
+         c.created_at                          as at,
+         c.expires_at                          as expires_at
     from public.speech_captures c
     join me on me.id = c.account_id
 
@@ -147,7 +148,12 @@ as $$
     from public.extempore_sessions s
     join me on me.id = s.account_id
 
-  order by at desc
+  -- M-036: `order by at desc` failed with 42703 here. In a UNION the ORDER BY
+  -- may only use *output* column names, and the first branch was unaliased, so
+  -- the ninth column was called `expires_at` and nothing was called `at`. The
+  -- branches are aliased above for the reader; the sort uses the ordinal so a
+  -- future rename of a column cannot break it again.
+  order by 8 desc
   limit least(greatest(coalesce(p_limit, 30), 1), 100);
 $$;
 
