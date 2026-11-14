@@ -1,2 +1,4 @@
-# local screenshot rig — see docs/PROJECT-JOURNAL.md S-30
-.tools/
+tools/node_modules/
+tools/.cache/
+tools/al2023/
+tools/shots/

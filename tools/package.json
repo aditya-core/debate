@@ -1,0 +1,14 @@
+{
+  "name": "gift-of-words-tools",
+  "private": true,
+  "type": "module",
+  "description": "Local screenshot rig. Not shipped, not imported by the app.",
+  "scripts": {
+    "setup": "bash setup.sh",
+    "shot": "node shot.mjs"
+  },
+  "dependencies": {
+    "@sparticuz/chromium": "^153.0.0",
+    "puppeteer-core": "^25.17.0"
+  }
+}

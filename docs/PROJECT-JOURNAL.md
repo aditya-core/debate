@@ -1629,3 +1629,61 @@ the workspace snapshot and were wiped twice. The screenshot rig now lives in
 `.tools/` (gitignored, persisted with the workspace): `setup.sh` installs
 puppeteer-core + the `@sparticuz/chromium` binary and unpacks the `al2023` libs,
 `shot.mjs` photographs any route at any viewport with reduced motion emulated.
+
+---
+
+### S-31 — 2026-11-14 — Three real pages, and onboarding answers that cannot be lost
+
+**The complaint, taken literally.** Two of the rail's five destinations opened
+`/account`, and `/account` lived in the marketing shell — light, wide, and almost
+empty of the one thing it was for. It is now three pages, each with its own job:
+
+| Route | Page | What it answers |
+|---|---|---|
+| `/progress` | My Progress | what is measured, what is a dash, and which gate is next |
+| `/history` | Practice history | every moment you actually spoke, newest first |
+| `/account` | Your account | identity, plan, worlds, security — in the studio, not the shopfront |
+
+The old `app/(site)/account/page.tsx` is deleted. The rail's "Practice History"
+lost its `soon` chip; "My Progress" no longer jumps to an anchor on the home page.
+
+**D-099 — history is a list of events, not lessons.** A row appears when a capture
+or a session exists, never when a page is opened. Captures carry no world (one
+prompt, one transcript), so the UI shows no world chip rather than guessing one;
+sessions do, and will show it once the scorer writes them.
+
+**D-100 — the audit trail beside the live row.** `learner_profiles` holds the
+current answers, which is right for the coach and wrong for the record: an edit in
+month three erases what was said in month one, exactly what a personalised path and
+a DPDP access request both need. Migration `0008` adds
+`onboarding_submissions` — append-only, written by a trigger on
+`learner_profiles.answers`, readable only by its owner, with no insert/update/delete
+policy and table privileges revoked. The live row stays the fast read; the log is
+the truth.
+
+**D-101 — one read for history.** `my_recent_practice(p_limit)` unions the
+caller's captures and both worlds' sessions, takes **no account id** (an id
+parameter is an invitation to enumerate), and is granted only to `authenticated`.
+`speech_captures` keeps RLS with zero policies; the function is `security definer`,
+so the table stays unreadable while its owner's own rows come back.
+
+**Guard fix found while wiring it.** `requireOnboardedAccount()` redirected a
+signed-in user with no account row to `/account` — which is now a studio page that
+requires an account. That is a redirect loop; the target is `/signin?state=expired`,
+and the return type now narrows `learner` instead of leaving every caller to cast.
+
+**Verified:** `tsc` clean; `next build` green; `npm test` 7/7; `npm run audit:styles`
+six public routes, all matched; `/progress`, `/history`, `/account` all `307` to
+`/signin?state=expired` without a session. Screenshots at 1440 and 390 in
+`tools/shots/` (progress, history, account) — fixtures, since the pages are gated.
+
+**Not verified:** the pages against a real session and a real database. Migration
+`0008` has never run against Postgres; until it does, `/history` renders its
+"history is unavailable" state and says so rather than pretending to be empty. This
+is the same gap as `0007` — both still need applying.
+
+**Tooling, now survivable.** The screenshot rig moved from `/home/user/tools` (wiped
+twice, outside the snapshot) into `tools/` in the repo: `setup.sh` installs
+puppeteer-core and the `@sparticuz/chromium` build, `shot.mjs` photographs any route
+with reduced motion emulated. `tools/node_modules`, `al2023/`, `.cache` and `shots/`
+are gitignored.

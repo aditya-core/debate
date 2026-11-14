@@ -77,8 +77,8 @@ const ITEMS: Array<{
   { label: "Home", href: "/dashboard", icon: "home" },
   { label: "Learn", icon: "book", soon: true },
   { label: "AI Arena", href: "/welcome", icon: "arena" },
-  { label: "My Progress", href: "/dashboard#progress", icon: "chart" },
-  { label: "Practice History", icon: "history", soon: true },
+  { label: "My Progress", href: "/progress", icon: "chart" },
+  { label: "Practice History", href: "/history", icon: "history" },
 ];
 
 function Icon({ name }: { name: keyof typeof ICONS }) {

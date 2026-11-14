@@ -434,7 +434,7 @@ export default function StudioDashboard({
                 </svg>
                 Skill overview
               </h2>
-              <Link href="/dashboard#progress" className="text-[0.72rem] text-[var(--s-faint)] hover:text-[var(--s-fg)]">
+              <Link href="/progress" className="text-[0.72rem] text-[var(--s-faint)] hover:text-[var(--s-fg)]">
                 View details →
               </Link>
             </div>

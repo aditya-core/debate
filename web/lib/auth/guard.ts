@@ -84,13 +84,18 @@ export function hasVerified(ctx: AccountContext | null): boolean {
  * For pages that must not be seen before onboarding finishes.
  * A signed-out visitor goes to sign-in; a signed-in one goes to the wizard.
  */
-export async function requireOnboardedAccount(): Promise<AccountContext & { account: AccountRow }> {
+export async function requireOnboardedAccount(): Promise<
+  AccountContext & { account: AccountRow; learner: LearnerRow }
+> {
   const ctx = await getAccountContext();
 
   if (!ctx) redirect("/signin?state=expired");
-  if (!ctx.account) redirect("/account");
+  // A signed-in user with no account row means the signup trigger did not run.
+  // Sending them to /account would now be a loop, because /account is a studio
+  // page that asks for an account. Sign-in is the only honest place to explain it.
+  if (!ctx.account) redirect("/signin?state=expired");
   if (!hasVerified(ctx)) redirect("/verify");
   if (!hasOnboarded(ctx)) redirect("/onboarding");
 
-  return ctx as AccountContext & { account: AccountRow };
+  return ctx as AccountContext & { account: AccountRow; learner: LearnerRow };
 }
