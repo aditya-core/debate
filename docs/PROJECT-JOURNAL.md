@@ -1531,3 +1531,64 @@ gutters lopsided (224px rail + centred 1180px container).
 **Still unverified:** real session data (the harness uses fixtures with 3 reps;
 production shows zeros), and the switch on a real phone (touch target 96×30 is
 borderline).
+
+---
+
+### S-29 — 2026-11-14 — The studio, rebuilt to the designer's mockups
+
+**What the mockups asked for, and what is now on screen.** A dark room rather than a
+dashboard: a 248px rail on the left with the flame and five destinations, a serif
+pair in the hero — *Think clearly.* in cream, *Argue confidently.* in amber gradient —
+a marble bust lit from the right, and a 392px column of evidence beside it. Below:
+the arena in three tiers, a six-step learning path, and a full-width daily workout.
+On a phone the same room is one column: greeting, "Your next training is ready.",
+the recommended card, the ring, the workout, the skills, and a four-tab thumb bar.
+
+**The design system is scoped, not global.** Everything new lives under `.studio`
+(`--s-bg #070a0f`, `--s-panel #0d1219`, `--s-line #1b2431`, an amber ladder from
+`#ffc46b` to `#ef7c0a`) so the marketing pages keep their own light identity and
+neither half of the product can drift the other's palette.
+
+**D-096 — the studio is dark, the shopfront is not.** Not a theme toggle: the
+practice room is a lit bust on a black wall, and that only works in the dark. The
+marketing site keeps light/dark. A learner who toggles to light on `/` should not
+expect the arena to follow.
+
+**D-097 — every number is a gate or a dash.** The ring is four real checks — setup,
+baseline, one rep, three reps, 25 each — not a typographic 68%. Pace and sustained
+length are computed from the saved baseline (`words / minutes`); structure and
+evidence are **`—`** with "unlocks with the first scored rep", because no scorer
+exists to fill them. A progress bar that lies is worse than an empty one.
+
+**D-098 — the active rail row is a tint, not a second button.** A filled amber pill
+sat in the rail competing with *Continue training* for the same glance. The active
+row is now a warm wash with a 2px amber edge; the icon takes the accent.
+
+**M-034 — "only the hero rendered".** The first screenshot showed one card and a
+black page. The DOM was complete, `getBoundingClientRect` had every section in place,
+and `getComputedStyle` on each heading said `opacity: 1` — which is exactly the trap:
+`opacity` is not inherited in the computed value, and the *ancestors* were at 0.
+Headless Chromium throttles CSS animations on a backgrounded page, so `.s-rise`
+(0.55s, `fill-mode: both`, staggered 0–180ms) stalled at its first frame. The page
+was fine; the camera was lying. `shot.mjs` now emulates `prefers-reduced-motion:
+reduce`, which lands every element in its settled state — the same thing a
+motion-sensitive learner sees, thanks to the guard already in `globals.css`.
+
+**Fixes found by looking:** the bust left a visible rectangular seam until its mask
+became a radial fade; the work-out strip floated mid-page until the two columns were
+made to bottom out together (the path card grows and takes a "next up" footer); the
+"Complete" caption spilled over the ring on a phone at 86px; the mobile step arrows
+sat a line below their icons; the tablet showed a 834px-wide phone; the arena icon
+read as a crossed-out asterisk at 16px and is now a crosshair.
+
+**Verified:** `tsc` clean, `next build` green, `npm test` 7/7, `audit:styles`
+294 classes matched on the harness, `/dashboard` still 307s to
+`/signin?state=expired` without a session. Screenshots at 1440, 834 and 390 in
+`/home/user/shots/` (`studio-desktop5.png`, `studio-tablet6.png`,
+`studio-mobile6.png`, `nav-active2.png`) — not committed.
+
+**Unverified:** the page with a real session's data (the harness runs fixtures with
+3 reps; production starts at zeros and every card has an honest empty state to
+prove); motion as *seen* — the animations are known to run, but this sandbox only
+photographs their end state; and the touch feel on a ₹15k Android, which needs a
+device.

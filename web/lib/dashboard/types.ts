@@ -40,6 +40,20 @@ export type CaptureSummary = {
   expires_at: string;
 };
 
+export type PathStep = {
+  key: string;
+  label: string;
+  state: "done" | "current" | "next" | "locked";
+};
+
+export type SkillRow = {
+  key: string;
+  label: string;
+  /** 0–100, or null when nothing has been measured yet. */
+  value: number | null;
+  note: string;
+};
+
 export type DashboardData = {
   firstName: string | null;
   displayId: string;
@@ -58,6 +72,11 @@ export type DashboardData = {
   /** One series per world: a debate week and an extempore week are not a total. */
   week: Record<World, WeekDay[]>;
   capture: CaptureSummary | null;
+  /** Real completion of the four things that make an account usable. */
+  progress: { percent: number; level: number };
+  path: PathStep[];
+  skills: SkillRow[];
+  metrics: { words: number | null; wpm: number | null };
   /** Both worlds resolved up front, so switching costs no round trip. */
   today: Record<World, Prompt>;
 };
