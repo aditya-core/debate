@@ -1,9 +1,27 @@
 import type { ReactNode } from "react";
-import "@fontsource-variable/fraunces";
+import localFont from "next/font/local";
 import MobileTabs from "@/components/studio/MobileTabs";
 import Sidebar from "@/components/studio/Sidebar";
 import Topbar from "@/components/studio/Topbar";
 import { getAccountContext } from "@/lib/auth/guard";
+
+/**
+ * Fraunces, self-hosted.
+ *
+ * It used to come from `@fontsource-variable/fraunces`, which meant the studio
+ * would not build on a machine whose `node_modules` predated the install — the
+ * exact "Module not found" a deploy or a colleague hits after a pull. One 36 KB
+ * wght-only latin file, committed, and the build no longer depends on an install
+ * step going right. Licence: SIL OFL 1.1, `web/fonts/OFL-Fraunces.txt`.
+ */
+const fraunces = localFont({
+  src: "../../fonts/fraunces-latin-wght.woff2",
+  weight: "100 900",
+  style: "normal",
+  display: "swap",
+  variable: "--font-serif-display",
+  fallback: ["ui-serif", "Georgia", "Times New Roman", "serif"],
+});
 
 /**
  * The studio.
@@ -24,7 +42,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
     .join("");
 
   return (
-    <div className="studio min-h-[100svh]">
+    <div className={`studio min-h-[100svh] ${fraunces.variable}`}>
       <div className="flex w-full">
         <Sidebar initials={initials} />
         <div className="min-w-0 flex-1">

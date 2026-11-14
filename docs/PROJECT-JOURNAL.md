@@ -1592,3 +1592,40 @@ read as a crossed-out asterisk at 16px and is now a crosshair.
 prove); motion as *seen* — the animations are known to run, but this sandbox only
 photographs their end state; and the touch feel on a ₹15k Android, which needs a
 device.
+
+---
+
+### S-30 — 2026-11-14 — The studio would not build on the machine that pulled it
+
+**M-035 — "Module not found: @fontsource-variable/fraunces".** PR #17 added a font
+package to `package.json` and to the lockfile; the repo installs cleanly (`npm ci`
+verified from scratch). The error appeared on the owner's machine because his
+`node_modules` predated the merge — Next resolves the import before anything else
+can explain itself, so a login lands on a build error rather than the dashboard.
+
+The quick answer is "run `npm install`". That is not a fix, it is a workaround for a
+class of failure: **a page that only builds when someone else's install step went
+right.** The studio is the first screen after login, so the blast radius is the whole
+product.
+
+**Fixed by removing the dependency, not by documenting it.** Fraunces is now
+self-hosted: one 36 KB wght-only latin `woff2` at `web/fonts/fraunces-latin-wght.woff2`,
+loaded through `next/font/local` in `app/(app)/layout.tsx`, exposed as
+`--font-serif-display` and consumed by `.s-serif`. The OFL licence ships beside it
+(`web/fonts/OFL-Fraunces.txt`). `@fontsource-variable/fraunces` is gone from
+`package.json` and the lockfile.
+
+Consequences: the build no longer depends on an npm install resolving that package,
+the font is preloaded and self-hosted at runtime like the rest of the page, and there
+are no third-party requests on a screen that is behind a login.
+
+**Verified:** clean `npm ci` → `next build` green; `npm test` 7/7; `audit:styles` six
+public routes, all matched; a temporary `/font-check` route inside the `(app)` group
+rendered the serif pair and the numeral/figure line correctly
+(`.tools/shots/font-check.png`) and was deleted before committing.
+
+**Tooling moved into the repo.** `/home/user/tools` and `/home/user/shots` are outside
+the workspace snapshot and were wiped twice. The screenshot rig now lives in
+`.tools/` (gitignored, persisted with the workspace): `setup.sh` installs
+puppeteer-core + the `@sparticuz/chromium` binary and unpacks the `al2023` libs,
+`shot.mjs` photographs any route at any viewport with reduced motion emulated.
