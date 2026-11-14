@@ -2,7 +2,8 @@ import type { AccountContext, AccountRow, LearnerRow } from "@/lib/auth/guard";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { getLatestCapture } from "@/lib/practice/capture";
 import { pickPrompt } from "@/lib/practice/prompts";
-import type { DashboardData, WeekDay, World } from "@/lib/dashboard/types";
+import type { DashboardData, PathStep, SkillRow, WeekDay, World } from "@/lib/dashboard/types";
+import { wordsPerMinute } from "@/lib/practice/metrics";
 
 /**
  * Everything the dashboard shows, in one read.
@@ -100,6 +101,61 @@ export async function loadDashboard(
   const extemporeRows = (extemporeSessions.data ?? []) as SessionRow[];
   const allDates = [...debateRows, ...extemporeRows].map((row) => isoDay(row.started_at));
 
+  const reps = debateRows.length + extemporeRows.length;
+  const wpm = capture ? wordsPerMinute(capture.word_count, capture.duration_ms) : null;
+
+  /**
+   * Progress is four real gates, 25 each — not a made-up percentage. It is
+   * deliberately slow to reach 100: the last gate needs three reps.
+   */
+  const gates = [true, Boolean(capture), reps >= 1, reps >= 3];
+  const percent = gates.filter(Boolean).length * 25;
+
+  const path: PathStep[] = [
+    { key: "setup", label: "Setup", state: "done" },
+    { key: "baseline", label: "Baseline", state: capture ? "done" : "current" },
+    {
+      key: "first-rep",
+      label: "First rep",
+      state: !capture ? "next" : reps >= 1 ? "done" : "current",
+    },
+    { key: "scored", label: "Scored rep", state: reps >= 1 ? "next" : "locked" },
+    { key: "feedback", label: "Feedback", state: "locked" },
+    { key: "level", label: "Next level", state: "locked" },
+  ];
+
+  /**
+   * The four rows the design gives percentages to. Two of them we can actually
+   * measure today (pace and length of the baseline); the two that need scored
+   * reps say so instead of inventing a number.
+   */
+  const skills: SkillRow[] = [
+    {
+      key: "pace",
+      label: "Pace",
+      value: wpm ? Math.min(100, Math.round((wpm / 170) * 100)) : null,
+      note: wpm ? `${wpm} words a minute` : "Needs a spoken baseline",
+    },
+    {
+      key: "length",
+      label: "Sustained speech",
+      value: capture ? Math.min(100, Math.round((capture.word_count / 150) * 100)) : null,
+      note: capture ? `${capture.word_count} words in ${Math.round(capture.duration_ms / 1000)}s` : "Needs a baseline",
+    },
+    {
+      key: "structure",
+      label: "Structure",
+      value: null,
+      note: "Unlocks with the first scored rep",
+    },
+    {
+      key: "evidence",
+      label: "Evidence",
+      value: null,
+      note: "Unlocks with the first scored rep",
+    },
+  ];
+
   const now = new Date();
   const seed = {
     accountKey: ctx.account.display_id,
@@ -143,6 +199,10 @@ export async function loadDashboard(
       extempore: weekFrom(extemporeRows.map((row) => isoDay(row.started_at)), now),
     },
     capture,
+    progress: { percent, level: 1 + Math.floor(reps / 10) },
+    path,
+    skills,
+    metrics: { words: capture?.word_count ?? null, wpm },
     today: {
       debate: pickPrompt({ ...seed, format: "debate" }).prompt,
       extempore: pickPrompt({ ...seed, format: "extempore" }).prompt,
