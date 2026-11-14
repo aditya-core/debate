@@ -1687,3 +1687,36 @@ twice, outside the snapshot) into `tools/` in the repo: `setup.sh` installs
 puppeteer-core and the `@sparticuz/chromium` build, `shot.mjs` photographs any route
 with reduced motion emulated. `tools/node_modules`, `al2023/`, `.cache` and `shots/`
 are gitignored.
+
+---
+
+### S-32 — 2026-11-14 — M-036: the migration that ran on my machine and nowhere else
+
+**M-036 — `42703: column "at" does not exist`.** `my_recent_practice()` in `0008`
+ended with `order by at desc`. In a `UNION ALL`, Postgres resolves `ORDER BY`
+against **output column names**, and the first branch of that union had no aliases.
+Its ninth column was therefore called `expires_at`, and nothing was called `at` —
+so the function failed the moment it ran against a real database.
+
+Three things made this possible, and only one of them is SQL:
+
+1. The first branch relied on positional output with no names, which reads fine
+   and lies quietly.
+2. I wrote a migration I could not execute — there is no Postgres in this sandbox
+   (`psql`, `docker`, `initdb` all absent) — and the PR body said so, but "not
+   verified" does not stop a file from being wrong.
+3. `tsc`, `next build` and the test suite cannot see SQL. A green build says
+   nothing about a migration, and I let a green build stand in for proof.
+
+**The fix:** the first branch is now fully aliased (`as at`, `as expires_at`, …);
+the sort uses `order by 8 desc`, the ordinal, so a future column rename cannot
+break it again. Both changes are in `0008`, which stays idempotent — `create or
+replace` and `if not exists` throughout — so re-running the whole file is safe.
+
+**The rule this buys:** a migration is done when it has run against a database, and
+until then it is marked *unverified* in the journal, in the PR, and in the reply —
+never presented as shipped. The gap is now written down rather than implied.
+
+**Still unverified:** the corrected function has been reviewed, not executed. No
+Postgres exists here; it needs to be run in the Supabase SQL editor before
+`/history` can be trusted.
