@@ -6,3 +6,6 @@ out
 next-env.d.ts
 *.tsbuildinfo
 .env*.local
+
+# local screenshot rig (not part of the app)
+.tools/
