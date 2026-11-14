@@ -34,7 +34,7 @@ const TABS: Tab[] = [
   },
   {
     label: "Progress",
-    href: "/dashboard#progress",
+    href: "/progress",
     icon: (
       <>
         <path d="M4 20h16" />
