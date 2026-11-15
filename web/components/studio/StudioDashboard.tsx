@@ -1,9 +1,10 @@
+"use client";
+
 import Link from "next/link";
-import type { DashboardData } from "@/lib/dashboard/types";
-import type { GuideItem } from "@/lib/dashboard/guide";
+import { useState } from "react";
+import { buildGuide } from "@/lib/dashboard/guide";
 import { WORLD_LABELS } from "@/lib/dashboard/types";
-import { TOPIC_LABELS } from "@/lib/onboarding/schema";
-import { prepSeconds, speakSeconds } from "@/lib/practice/prompts";
+import type { DashboardData, World, WorldUI } from "@/lib/dashboard/types";
 
 const RING_R = 52;
 const RING_C = 2 * Math.PI * RING_R;
@@ -93,24 +94,97 @@ const svgProps = {
   "aria-hidden": true,
 };
 
+
+const WORLDS: World[] = ["debate", "extempore"];
+
+/**
+ * The switch.
+ *
+ * Two worlds, one thumb that slides. It is a state change, so the thumb moves in
+ * 300ms and the panel content fades in behind it — no spinner, because nothing is
+ * being fetched.
+ */
+function WorldSwitch({
+  value,
+  onChange,
+  full = false,
+}: {
+  value: World;
+  onChange: (world: World) => void;
+  full?: boolean;
+}) {
+  return (
+    <div
+      className={[
+        "relative grid grid-cols-2 rounded-full border border-[var(--s-line-2)] bg-[var(--s-panel)] p-1",
+        full ? "w-full" : "w-[15rem]",
+      ].join(" ")}
+    >
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-y-1 left-1 w-[calc(50%-0.25rem)] rounded-full border border-[var(--s-amber)]/40 bg-[var(--s-amber)]/15 transition-transform duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)]"
+        style={{ transform: value === "debate" ? "translateX(0)" : "translateX(100%)" }}
+      />
+      {WORLDS.map((item) => {
+        const active = item === value;
+        return (
+          <button
+            key={item}
+            type="button"
+            aria-pressed={active}
+            onClick={() => onChange(item)}
+            className={[
+              "relative z-10 rounded-full px-4 py-1.5 font-display text-[0.78rem] transition-colors",
+              active
+                ? "text-[var(--s-fg)]"
+                : "text-[var(--s-muted)] hover:text-[var(--s-fg)]",
+            ].join(" ")}
+          >
+            {WORLD_LABELS[item].name}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/**
+ * One home, two worlds.
+ *
+ * The switch lives here rather than in the URL: both worlds were resolved on the
+ * server and handed over together, so changing world is a state change, not a
+ * navigation — no spinner, no losing your place. The prompt library stays on the
+ * server (`WorldUI` carries the label and the two timers), which keeps zod and
+ * ~700 lines of prompts out of the browser bundle.
+ */
 export default function StudioDashboard({
   data,
-  guide,
+  ui,
 }: {
   data: DashboardData;
-  guide: GuideItem[];
+  ui: Record<World, WorldUI>;
 }) {
   const { firstName, learner, progress, totals, skills, metrics, capture } = data;
-  const world = "debate" as const;
+  const [world, setWorld] = useState<World>("debate");
   const prompt = data.today[world];
-  const prep = prepSeconds(prompt.format);
-  const speak = speakSeconds(prompt.format);
+  const prep = ui[world].prep;
+  const speak = ui[world].speak;
+  const guide = buildGuide(data, world);
   const lead = guide[0];
   const second = guide[1];
   const weekReps = data.week[world].reduce((sum, day) => sum + day.reps, 0);
 
   return (
     <div className="px-4 pb-28 pt-4 sm:px-6 lg:px-8 lg:pb-8 lg:pt-6">
+      {/* world switch — the same control at both sizes, one above the desk and
+          one under the greeting on a phone */}
+      <div className="mb-4 hidden items-center gap-3 lg:flex">
+        <span className="font-display text-[0.58rem] uppercase tracking-[0.18em] text-[var(--s-faint)]">
+          Practice world
+        </span>
+        <WorldSwitch value={world} onChange={setWorld} />
+      </div>
+
       {/* ================= desktop ================= */}
       <div className="hidden lg:grid lg:grid-cols-[minmax(0,1fr)_24.5rem] lg:gap-5">
         <div className="flex min-w-0 flex-col gap-5">
@@ -139,7 +213,7 @@ export default function StudioDashboard({
 
             <div className="relative max-w-[34rem] px-8 py-8">
               <p className="font-display text-[0.62rem] uppercase tracking-[0.22em] text-[var(--s-amber)]">
-                Your personal debate trainer
+                Your personal {WORLD_LABELS[world].name.toLowerCase()} trainer
               </p>
               <h1 className="s-serif mt-3 text-[2.6rem] font-semibold leading-[1.06] tracking-[-0.02em]">
                 Think clearly.
@@ -149,12 +223,15 @@ export default function StudioDashboard({
                 </span>
               </h1>
               <p className="mt-3 max-w-[30rem] text-[0.88rem] leading-relaxed text-[var(--s-muted)]">
-                A personalised, AI-powered learning experience to build your debate
-                and critical thinking skills.
+                A personalised, AI-powered learning experience to build your{" "}
+                {world === "debate"
+                  ? "debate and critical thinking"
+                  : "extempore and thinking-on-your-feet"}{" "}
+                skills.
               </p>
 
               <div className="mt-6 flex items-center gap-3">
-                <Link href="/welcome" className="s-btn-amber relative inline-flex items-center gap-2 overflow-hidden rounded-xl px-5 py-2.5 font-display text-[0.85rem] font-semibold">
+                <Link href={`/welcome?format=${world}`} className="s-btn-amber relative inline-flex items-center gap-2 overflow-hidden rounded-xl px-5 py-2.5 font-display text-[0.85rem] font-semibold">
                   <svg {...svgProps} className="h-3.5 w-3.5" fill="currentColor" stroke="none">
                     <path d="M8 5.5v13l11-6.5z" />
                   </svg>
@@ -189,8 +266,8 @@ export default function StudioDashboard({
                   </svg>
                   Enter the AI Arena
                 </h2>
-                <p className="mt-1 text-[0.82rem] text-[var(--s-muted)]">
-                  {WORLD_LABELS.debate.blurb} Start where you are.
+                <p key={world} className="s-swap mt-1 text-[0.82rem] text-[var(--s-muted)]">
+                  {WORLD_LABELS[world].blurb} Start where you are.
                 </p>
               </div>
             </div>
@@ -198,7 +275,7 @@ export default function StudioDashboard({
             <div className="mt-4 grid gap-4 sm:grid-cols-3">
               {/* beginner */}
               <Link
-                href="/welcome?format=debate"
+                href={`/welcome?format=${world}`}
                 className="s-card s-card-hover group relative flex flex-col p-4"
               >
                 <span className="grid h-10 w-10 place-items-center rounded-xl bg-emerald-500/12 text-emerald-400">
@@ -218,7 +295,7 @@ export default function StudioDashboard({
 
               {/* practice — today's rep */}
               <Link
-                href="/welcome"
+                href={`/welcome?format=${world}`}
                 className="s-card s-card-hover relative flex flex-col p-4"
                 style={{ borderColor: "rgba(245,165,36,0.42)" }}
               >
@@ -232,13 +309,15 @@ export default function StudioDashboard({
                     Recommended
                   </span>
                 </span>
-                <h3 className="mt-3 font-display text-[0.95rem] font-semibold">Practice</h3>
-                <p className="mt-1 line-clamp-2 text-[0.78rem] leading-relaxed text-[var(--s-muted)]">
-                  {prompt.title}
-                </p>
-                <span className="mt-3 font-display text-[0.66rem] uppercase tracking-[0.12em] text-[var(--s-amber)]">
-                  {TOPIC_LABELS[prompt.topic]} · start now
-                </span>
+                <div key={world} className="s-swap">
+                  <h3 className="mt-3 font-display text-[0.95rem] font-semibold">Practice</h3>
+                  <p className="mt-1 line-clamp-2 text-[0.78rem] leading-relaxed text-[var(--s-muted)]">
+                    {prompt.title}
+                  </p>
+                  <span className="mt-3 block font-display text-[0.66rem] uppercase tracking-[0.12em] text-[var(--s-amber)]">
+                    {ui[world].topicLabel} · start now
+                  </span>
+                </div>
               </Link>
 
               {/* challenge — locked */}
@@ -401,10 +480,10 @@ export default function StudioDashboard({
                   This week
                 </p>
                 <p className="font-display text-[0.66rem] tabular-nums text-[var(--s-muted)]">
-                  {weekReps} reps · {totals.xp} XP
+                  {weekReps} rep{weekReps === 1 ? "" : "s"} · {totals.xp} XP
                 </p>
               </div>
-              <div className="mt-2 flex items-end justify-between gap-1.5" aria-hidden="true">
+              <div key={world} className="s-swap mt-2 flex items-end justify-between gap-1.5" aria-hidden="true">
                 {data.week[world].map((day) => {
                   const max = Math.max(1, ...data.week[world].map((d) => d.reps));
                   return (
@@ -473,7 +552,7 @@ export default function StudioDashboard({
               Recent feedback
             </h2>
 
-            <div className="mt-4 space-y-3">
+            <div key={world} className="s-swap mt-4 space-y-3">
               {lead ? (
                 <div className="rounded-xl border border-emerald-400/25 bg-emerald-500/8 p-3">
                   <p className="flex items-center gap-2 font-display text-[0.58rem] uppercase tracking-[0.14em] text-emerald-300">
@@ -535,7 +614,7 @@ export default function StudioDashboard({
               </div>
             </div>
 
-            <div className="min-w-0 flex-1">
+            <div key={world} className="s-swap min-w-0 flex-1">
               <p className="truncate font-display text-[0.86rem] font-medium">{prompt.title}</p>
               <p className="mt-0.5 truncate text-[0.76rem] text-[var(--s-muted)]">
                 {prompt.angle}
@@ -543,7 +622,7 @@ export default function StudioDashboard({
             </div>
 
             <Link
-              href="/welcome"
+              href={`/welcome?format=${world}`}
               className="s-btn-amber inline-flex shrink-0 items-center gap-2 rounded-xl px-4 py-2 font-display text-[0.8rem] font-semibold"
             >
               Start exercise
@@ -575,9 +654,13 @@ export default function StudioDashboard({
               training is ready.
             </span>
           </h1>
-          <p className="mt-2 max-w-[22rem] text-[0.82rem] text-[var(--s-muted)]">
-            Continue building your debating skills.
+          <p className="mt-2 max-w-[14rem] text-[0.82rem] text-[var(--s-muted)] sm:max-w-[22rem]">
+            {WORLD_LABELS[world].blurb}
           </p>
+
+          <div className="mt-4">
+            <WorldSwitch value={world} onChange={setWorld} full />
+          </div>
 
           <img
             src="/img/hero-bust.webp"
@@ -601,12 +684,14 @@ export default function StudioDashboard({
             </svg>
             Recommended for you
           </p>
-          <h2 className="mt-2 font-display text-[1.15rem] font-semibold leading-snug">
-            {WORLD_LABELS.debate.name} · {TOPIC_LABELS[prompt.topic]}
-          </h2>
-          <p className="mt-1 line-clamp-2 text-[0.8rem] leading-relaxed text-[var(--s-muted)]">
-            {prompt.title}
-          </p>
+          <div key={world} className="s-swap">
+            <h2 className="mt-2 font-display text-[1.15rem] font-semibold leading-snug">
+              {WORLD_LABELS[world].name} · {ui[world].topicLabel}
+            </h2>
+            <p className="mt-1 line-clamp-2 text-[0.8rem] leading-relaxed text-[var(--s-muted)]">
+              {prompt.title}
+            </p>
+          </div>
 
           <div className="mt-3 flex items-center gap-2 text-[0.62rem] uppercase tracking-[0.1em] text-[var(--s-faint)]">
             <span className="flex flex-col items-center gap-1">
@@ -635,7 +720,7 @@ export default function StudioDashboard({
           </div>
 
           <Link
-            href="/welcome"
+            href={`/welcome?format=${world}`}
             className="s-btn-amber mt-4 flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 font-display text-[0.86rem] font-semibold"
           >
             <svg {...svgProps} className="h-3.5 w-3.5" fill="currentColor" stroke="none">
@@ -651,7 +736,9 @@ export default function StudioDashboard({
           <Ring percent={progress.percent} size={86} id="ring-mobile" />
           <div className="min-w-0 flex-1">
             <p className="font-display text-[0.8rem] font-medium">Level {progress.level}</p>
-            <p className="text-[0.72rem] text-[var(--s-muted)]">Developing debater</p>
+            <p className="text-[0.72rem] text-[var(--s-muted)]">
+              Developing {world === "debate" ? "debater" : "speaker"}
+            </p>
             <p className="mt-1 text-[0.72rem] text-[var(--s-amber)]">
               {totals.streak} day{totals.streak === 1 ? "" : "s"} streak
             </p>
@@ -673,7 +760,7 @@ export default function StudioDashboard({
             </p>
           </div>
           <Link
-            href="/welcome"
+            href={`/welcome?format=${world}`}
             aria-label="Start the daily workout"
             className="s-btn-amber grid h-9 w-9 place-items-center rounded-full"
           >

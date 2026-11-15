@@ -46,6 +46,13 @@ export type PathStep = {
   state: "done" | "current" | "next" | "locked";
 };
 
+/** Precomputed on the server so the client never needs the prompt library. */
+export type WorldUI = {
+  topicLabel: string;
+  prep: number;
+  speak: number;
+};
+
 export type SkillRow = {
   key: string;
   label: string;

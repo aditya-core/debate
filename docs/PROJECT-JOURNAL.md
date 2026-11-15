@@ -1720,3 +1720,46 @@ never presented as shipped. The gap is now written down rather than implied.
 **Still unverified:** the corrected function has been reviewed, not executed. No
 Postgres exists here; it needs to be run in the Supabase SQL editor before
 `/history` can be trusted.
+
+---
+
+### S-33 — 2026-11-14 — One home, two worlds, and a switch that slides
+
+**The gap.** The studio had one dashboard: the debate one. Extempore existed in the
+schema, the prompt library and the rating table, and was reachable only by editing a
+URL. A learner with one login and two worlds could see half of their own progress.
+
+**D-102 — the switch is state, not navigation.** Both worlds were already resolved on
+the server by `loadDashboard()`. The switch therefore costs no request: it is a
+`useState<World>` in a client component, and the panel contents fade in behind a
+thumb that slides in 300ms. The one thing that must *not* be sent to the browser is
+the prompt library — `WorldUI` carries the topic label and the two timers, so zod and
+the ~700-line prompt file stay server-side.
+
+What actually changes with the world: the hero eyebrow ("your personal **extempore**
+trainer"), the hero sentence, the arena's own caption, the Practice card's motion and
+topic, both tier cards' timers, the feedback items (guide is rebuilt per world), the
+weekly sparkline, and every "start" link, which now carries `?format=debate|extempore`
+into `/welcome`.
+
+What deliberately does not: the streak, the gates, the ring, the skill bars. Days are
+global and skills are measured once from the baseline — a per-world streak would be a
+nicer story and a lie.
+
+**The control.** Two options, one sliding thumb, `aria-pressed`, real buttons, no
+custom keyboard handling needed. Desktop: a `PRACTICE WORLD` row above the desk.
+Phone: full-width, directly under the greeting, where a thumb already is.
+
+**Found by looking:** `1 rep` printed as `1 reps`; the hero eyebrow and sentence still
+named debate while the Practice card showed an extempore motion; the arena caption
+was debate-only; the phone greeting's blurb ran under the bust and needed a narrower
+measure; "Developing debater" followed the reader into extempore.
+
+**Verified:** `tsc` clean, `next build` green, `npm test` 7/7, `audit:styles` 6/6,
+`/dashboard` still `307 → /signin?state=expired`. Screenshots at 1440 and 390 — both
+worlds, reached by actually clicking the control — in `tools/shots/switch-debate.png`,
+`switch-extempore2.png`, `mobile-debate.png`, `mobile-extempore.png`.
+
+**Not verified:** the transition's *feel* on a real phone (the sandbox photographs a
+settled frame, and reduced motion is what it emulates), and both worlds with a real
+account, where ratings are defaults rather than measured.
