@@ -1817,3 +1817,40 @@ Screenshots with fixtures at 0 points and 1,040 points, plus the ladder page at
 until reps are scored and written), and whether 1,000 points is the right first
 rung — that is a retention question, not a design one, and it needs a month of real
 reps to answer.
+
+---
+
+### S-35 — 2026-11-14 — The red "Dangerous" badge is a domain problem, not a code problem
+
+**What the owner saw.** Chrome showed **Dangerous** in the address bar on
+`debate-cyan-one.vercel.app/signin` and, after submitting, a modal: *"You just
+entered your password on a deceptive site."* On laptop and phone.
+
+**What it is.** Google Safe Browsing reputation for the **host**, not TLS, not
+Supabase, not a bug in the login flow. Nothing in the repository can clear it, and a
+redeploy does not reset it — reputation follows the domain, not the deployment.
+
+**Why it happened here.** The product is served from a shared `*.vercel.app`
+subdomain. Those hostnames are cheap and disposable, and when enough of them are
+abused the neighbourhood's reputation leaks onto innocent tenants. It is also the
+exact shape a phishing classifier looks for: a page presenting a brand ("Gift of
+Words") that collects an email and a password at a hostname unrelated to that brand.
+
+**What changed in the repo.** Only what makes the fix possible:
+
+- `app/layout.tsx` renders a Google Search Console verification tag when
+  `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` is set. A Safe Browsing review requires a
+  verified property, and a `vercel.app` hostname cannot be verified by DNS.
+- `docs/DOMAIN-AND-SAFETY.md` records the runbook: confirm the reason via the
+  Transparency Report, verify the URL-prefix property, request the review with
+  wording that names the shared-domain cause, move production to a domain we own,
+  put preview deployments behind Vercel Authentication.
+
+**D-106 — the product must not collect passwords on a hostname we do not own.** Not
+just to clear this flag: a login form on a random `vercel.app` URL trains users to
+type credentials into unfamiliar hosts, which is the behaviour phishing depends on. A
+custom domain is the fix; `vercel.app` stays a machine-only address.
+
+**Unverified:** whether the flag is on this exact host or the shared host, and how long
+the review will take. Both require the Transparency Report and Search Console, which
+need the owner's Google account.
