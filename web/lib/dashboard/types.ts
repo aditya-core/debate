@@ -7,6 +7,7 @@
  */
 
 import type { Prompt } from "@/lib/practice/prompts";
+import type { LevelInfo, LevelStep } from "@/lib/dashboard/levels";
 
 export type World = "debate" | "extempore";
 
@@ -81,6 +82,9 @@ export type DashboardData = {
   capture: CaptureSummary | null;
   /** Real completion of the four things that make an account usable. */
   progress: { percent: number; level: number };
+  /** The ladder: points, the current rung, and what the next one asks for. */
+  level: LevelInfo;
+  levels: readonly LevelStep[];
   path: PathStep[];
   skills: SkillRow[];
   metrics: { words: number | null; wpm: number | null };

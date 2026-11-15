@@ -1763,3 +1763,57 @@ worlds, reached by actually clicking the control — in `tools/shots/switch-deba
 **Not verified:** the transition's *feel* on a real phone (the sandbox photographs a
 settled frame, and reduced motion is what it emulates), and both worlds with a real
 account, where ratings are defaults rather than measured.
+
+---
+
+### S-34 — 2026-11-14 — Levels in points, and the analytics box finally says something
+
+**What the owner asked for, and what changed.** Remove the hero paragraph; narrow
+the desk so the analytics column can breathe; put "Level 1" in large type at the top
+of that column; start the ring at zero; define the ladder in points (1,000 → 2,500 →
+4,000, then +1,500 a rung); and give every rung a sentence a learner understands.
+
+**D-103 — a level is a rung with a sentence, not a badge.** `lib/dashboard/levels.ts`
+holds the ladder: eight rungs, each with a threshold, a name, and two sentences —
+what you can do here, and what the next rung asks of you. The thresholds are product
+decisions, and they are written in one file with one function reading them, because
+changing them changes what every learner sees:
+
+| Rung | Points | Name | The ask |
+|---|---|---|---|
+| 1 | 0 | First words | a week of reps |
+| 2 | 1,000 | Steady voice | structure — claim, evidence, impact |
+| 3 | 2,500 | Clear structure | pressure — answering the objection |
+| 4 | 4,000 | Under pressure | precision — openings and endings |
+| 5 | 5,500 | Sharpened | persuasion |
+| 6 | 7,000 | Persuasive | consistency at length |
+| 7 | 8,500 | Arena ready | harder rooms |
+| 8 | 10,000 | Veteran | — |
+
+**D-104 — points are shared, ratings are not.** Points are the sum of both worlds'
+XP: speaking is speaking, and a rep in either world climbs one ladder. Ratings stay
+per world, because those are measured against different rubrics. The ring is now
+"progress to the next rung" — exactly 0% for a fresh account, which is what a new
+learner should see — and the four setup gates keep their own 25% each on
+`/progress`, where they belong.
+
+**D-105 — the hero does not explain itself.** The paragraph under the serif pair is
+gone. A screen people see every day should not re-pitch itself each visit; the line
+now sits where a stranger reads it once, and the space goes to the skeleton
+(eyebrow → headline → action). Desk narrowed, analytics column widened to 27rem.
+
+**M-037 — the page grew a hole.** Removing the paragraph made the left column
+shorter, and the learning-path card, which was `flex-1`, stretched to fill the
+difference: a 300px card holding 1,000px of air. Fixed by moving the weekly chart
+out of the analytics card and into the left column, then letting the path keep its
+natural height. Both columns now bottom out within 40px of each other at 1440.
+
+**Verified:** `tsc` clean, `next build` green, `npm test` 7/7, `audit:styles` 6/6.
+Screenshots with fixtures at 0 points and 1,040 points, plus the ladder page at
+2,600: `tools/shots/level-zero5.png`, `level-1040b.png`, `ladder2.png`,
+`mobile-level.png`.
+
+**Not verified:** the ladder against real XP (production accounts sit at 0 points
+until reps are scored and written), and whether 1,000 points is the right first
+rung — that is a retention question, not a design one, and it needs a month of real
+reps to answer.
