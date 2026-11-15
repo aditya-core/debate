@@ -9,6 +9,12 @@ export const metadata: Metadata = {
   // Falls back to the domain we intend to own; NEXT_PUBLIC_SITE_URL wins once
   // it exists, so canonical/OG URLs follow the deployment rather than a guess.
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://giftofwords.app"),
+  // Google Search Console ownership proof. Set NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
+  // to the token Search Console gives you; it lands as a <meta> tag on every page.
+  // Needed to open a Safe Browsing review for a domain we do not control DNS for.
+  verification: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
+    ? { google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION }
+    : undefined,
   openGraph: {
     title: "Gift of Words",
     description:

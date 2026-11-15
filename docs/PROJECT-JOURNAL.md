@@ -1817,3 +1817,80 @@ Screenshots with fixtures at 0 points and 1,040 points, plus the ladder page at
 until reps are scored and written), and whether 1,000 points is the right first
 rung — that is a retention question, not a design one, and it needs a month of real
 reps to answer.
+
+---
+
+### S-35 — 2026-11-14 — The red "Dangerous" badge is a domain problem, not a code problem
+
+**What the owner saw.** Chrome showed **Dangerous** in the address bar on
+`debate-cyan-one.vercel.app/signin` and, after submitting, a modal: *"You just
+entered your password on a deceptive site."* On laptop and phone.
+
+**What it is.** Google Safe Browsing reputation for the **host**, not TLS, not
+Supabase, not a bug in the login flow. Nothing in the repository can clear it, and a
+redeploy does not reset it — reputation follows the domain, not the deployment.
+
+**Why it happened here.** The product is served from a shared `*.vercel.app`
+subdomain. Those hostnames are cheap and disposable, and when enough of them are
+abused the neighbourhood's reputation leaks onto innocent tenants. It is also the
+exact shape a phishing classifier looks for: a page presenting a brand ("Gift of
+Words") that collects an email and a password at a hostname unrelated to that brand.
+
+**What changed in the repo.** Only what makes the fix possible:
+
+- `app/layout.tsx` renders a Google Search Console verification tag when
+  `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` is set. A Safe Browsing review requires a
+  verified property, and a `vercel.app` hostname cannot be verified by DNS.
+- `docs/DOMAIN-AND-SAFETY.md` records the runbook: confirm the reason via the
+  Transparency Report, verify the URL-prefix property, request the review with
+  wording that names the shared-domain cause, move production to a domain we own,
+  put preview deployments behind Vercel Authentication.
+
+**D-106 — the product must not collect passwords on a hostname we do not own.** Not
+just to clear this flag: a login form on a random `vercel.app` URL trains users to
+type credentials into unfamiliar hosts, which is the behaviour phishing depends on. A
+custom domain is the fix; `vercel.app` stays a machine-only address.
+
+**Unverified:** whether the flag is on this exact host or the shared host, and how long
+the review will take. Both require the Transparency Report and Search Console, which
+need the owner's Google account.
+
+---
+
+### S-36 — 2026-11-14 — Removing the phishing *look* from the sign-in page
+
+Copy alone cannot clear a Safe Browsing flag — that is Google's decision about a
+domain, and S-35 owns the process. But the owner's instinct was half right: the page
+was also **reading** like a credential-collection mock-up, and those signals are worth
+removing whether or not a classifier ever sees them.
+
+**What the page said before:** a purple panel headed "One account. Two worlds." with
+three rows of fake identifiers — `GOW-USER-7K4M2QW`, `GOW-DEB-3XPN8T4`,
+`GOW-EXT-9RJD5V2` — captioned "Illustrative identifiers", next to a form asking for an
+email and a password. To a person who has been trained to distrust login pages, an
+unfamiliar hostname plus invented account IDs plus a password field is the whole
+phishing checklist at once.
+
+**What it says now:**
+
+| Before | After |
+|---|---|
+| three fake account IDs on the login page | three statements about what the product is |
+| no statement of who runs the site | "Gift of Words is a product of Forge Digital" |
+| nothing about how the password is handled | "over HTTPS, straight to Supabase Auth — never stored in this app's database" |
+| "Welcome back / your record is where you left it" | "Sign in to continue your practice record. This page asks for your email and password, and nothing else." |
+| no product name on the phone layout | "A debate and extempore practice app by Forge Digital" above the heading |
+| a footer link labelled `giftofwords.app` that this deployment is not served from | "Home" |
+| `/verify` opened straight into a code box | a paragraph saying who sent the code and that nobody will ask for it |
+
+`IdentityRow` is deleted. `verify` copy states plainly that no one will ask for the
+code by email or phone, and that the page never asks for a password.
+
+**Honest limit, stated in the PR and here:** none of this removes the warning. Google
+re-evaluates the host; a custom domain is the durable fix; the review is the short-term
+one. What this does is make the page defensible when a human — a reviewer, a cautious
+parent, a first-time user — looks at it.
+
+**Verified:** `tsc` clean, `next build` green, `npm test` 7/7, `audit:styles` 6/6,
+screenshots of `/signin` at 1440 and 390 (`tools/shots/signin-new.png`,
+`signin-mobile2.png`).
