@@ -58,22 +58,29 @@ export default function AuthShell({
               never your scores.
             </p>
 
-            <div className="mt-8 space-y-2.5">
-              <IdentityRow label="Account" id="GOW-USER-7K4M2QW" tone="solid" />
-              <div className="ml-5 space-y-2.5 border-l border-white/25 pl-5">
-                <IdentityRow label="Debate" id="GOW-DEB-3XPN8T4" tone="soft" />
-                <IdentityRow label="Extempore" id="GOW-EXT-9RJD5V2" tone="soft" />
-              </div>
-            </div>
-
-            <p className="mt-6 text-[0.72rem] uppercase tracking-[0.16em] text-white/50">
-              Illustrative identifiers
-            </p>
+            <ul className="mt-8 space-y-2.5">
+              {[
+                "Debate and extempore, practised out loud",
+                "One login, two separate records",
+                "Scored by a coach, not by strangers",
+              ].map((line) => (
+                <li
+                  key={line}
+                  className="flex items-start gap-2.5 rounded-xl border border-white/20 bg-white/10 px-3.5 py-2.5 text-[0.84rem] leading-snug text-white/85"
+                >
+                  <span aria-hidden="true" className="mt-[0.3rem] text-white/50">
+                    —
+                  </span>
+                  {line}
+                </li>
+              ))}
+            </ul>
           </div>
 
-          <p className="max-w-[40ch] text-[0.82rem] leading-relaxed text-white/60">
-            Free while we build. A parent or guardian approves accounts under 18
-            before any practice is recorded.
+          <p className="max-w-[42ch] text-[0.82rem] leading-relaxed text-white/60">
+            Gift of Words is a product of Forge Digital. Free while we build. A
+            parent or guardian approves accounts under 18 before any practice is
+            recorded.
           </p>
         </div>
       </aside>
@@ -90,6 +97,9 @@ export default function AuthShell({
             </Link>
           </div>
 
+          <p className="mb-3 text-[0.74rem] leading-relaxed text-faint lg:hidden">
+            A debate and extempore practice app by Forge Digital.
+          </p>
           <h1 className="font-display text-[1.9rem] font-medium leading-tight tracking-[-0.03em] text-fg">
             {title}
           </h1>
@@ -98,6 +108,12 @@ export default function AuthShell({
           </p>
 
           <div className="mt-8">{children}</div>
+
+          <p className="mt-5 text-[0.74rem] leading-relaxed text-faint">
+            Sign-in happens over HTTPS and the password goes straight to Supabase
+            Auth — it is never stored in this app&apos;s database. This page asks for
+            an email and a password, and nothing else.
+          </p>
 
           {footer ? <div className="mt-6">{footer}</div> : null}
         </div>
@@ -120,38 +136,10 @@ export default function AuthShell({
             ·
           </span>
           <Link href="/" className="link-underline transition-colors hover:text-fg">
-            giftofwords.app
+            Home
           </Link>
         </nav>
       </div>
-    </div>
-  );
-}
-
-function IdentityRow({
-  label,
-  id,
-  tone,
-}: {
-  label: string;
-  id: string;
-  tone: "solid" | "soft";
-}) {
-  return (
-    <div
-      className={[
-        "flex items-center justify-between rounded-xl border px-3.5 py-2.5 backdrop-blur-sm",
-        tone === "solid"
-          ? "border-white/35 bg-white/15"
-          : "border-white/20 bg-white/8",
-      ].join(" ")}
-    >
-      <span className="font-display text-[0.68rem] uppercase tracking-[0.16em] text-white/70">
-        {label}
-      </span>
-      <span className="font-display text-[0.72rem] tracking-[0.04em] text-white/90">
-        {id}
-      </span>
     </div>
   );
 }

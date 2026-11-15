@@ -74,6 +74,12 @@ export default async function VerifyPage() {
         <h1 className="mt-2 font-display text-[clamp(1.7rem,4vw,2.3rem)] font-medium leading-tight tracking-[-0.03em] text-fg">
           Check your inbox
         </h1>
+        <p className="mt-2 max-w-[46ch] text-[0.88rem] leading-relaxed text-muted">
+          We sent a six-digit code because someone — hopefully you — created a Gift
+          of Words account with this address. Nobody from Gift of Words will ever ask
+          you for that code by email or phone, and this page will never ask for a
+          password.
+        </p>
 
         <div className="mt-7 rounded-2xl border border-line bg-surface p-5 elevated sm:p-7">
           <OtpForm

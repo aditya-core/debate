@@ -14,7 +14,7 @@ export default function SignupPage() {
   return (
     <AuthShell
       title="Create your account"
-      subtitle="One login unlocks both worlds. It takes about a minute."
+      subtitle="Create your Gift of Words account. One login unlocks both worlds, and it takes about a minute."
     >
       <SetupNotice />
       <SignUpForm />

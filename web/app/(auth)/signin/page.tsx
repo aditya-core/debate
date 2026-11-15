@@ -25,7 +25,7 @@ export default async function SigninPage({
   return (
     <AuthShell
       title="Welcome back"
-      subtitle="Your practice record is exactly where you left it."
+      subtitle="Sign in to continue your practice record. This page asks for your email and password, and nothing else."
     >
       {notice ? (
         <div
