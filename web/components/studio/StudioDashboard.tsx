@@ -1,9 +1,11 @@
+"use client";
+
 import Link from "next/link";
-import type { DashboardData } from "@/lib/dashboard/types";
-import type { GuideItem } from "@/lib/dashboard/guide";
+import { useState } from "react";
+import { buildGuide } from "@/lib/dashboard/guide";
+import { formatPoints } from "@/lib/dashboard/levels";
 import { WORLD_LABELS } from "@/lib/dashboard/types";
-import { TOPIC_LABELS } from "@/lib/onboarding/schema";
-import { prepSeconds, speakSeconds } from "@/lib/practice/prompts";
+import type { DashboardData, World, WorldUI } from "@/lib/dashboard/types";
 
 const RING_R = 52;
 const RING_C = 2 * Math.PI * RING_R;
@@ -12,10 +14,12 @@ function Ring({
   percent,
   size = 96,
   id,
+  caption = "Complete",
 }: {
   percent: number;
   size?: number;
   id: string;
+  caption?: string;
 }) {
   const offset = RING_C * (1 - Math.max(0, Math.min(100, percent)) / 100);
   return (
@@ -49,7 +53,7 @@ function Ring({
           </p>
           {size >= 92 ? (
             <p className="mt-1 font-display text-[0.52rem] uppercase tracking-[0.14em] text-[var(--s-faint)]">
-              Complete
+              {caption}
             </p>
           ) : null}
         </div>
@@ -93,26 +97,99 @@ const svgProps = {
   "aria-hidden": true,
 };
 
+
+const WORLDS: World[] = ["debate", "extempore"];
+
+/**
+ * The switch.
+ *
+ * Two worlds, one thumb that slides. It is a state change, so the thumb moves in
+ * 300ms and the panel content fades in behind it — no spinner, because nothing is
+ * being fetched.
+ */
+function WorldSwitch({
+  value,
+  onChange,
+  full = false,
+}: {
+  value: World;
+  onChange: (world: World) => void;
+  full?: boolean;
+}) {
+  return (
+    <div
+      className={[
+        "relative grid grid-cols-2 rounded-full border border-[var(--s-line-2)] bg-[var(--s-panel)] p-1",
+        full ? "w-full" : "w-[15rem]",
+      ].join(" ")}
+    >
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-y-1 left-1 w-[calc(50%-0.25rem)] rounded-full border border-[var(--s-amber)]/40 bg-[var(--s-amber)]/15 transition-transform duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)]"
+        style={{ transform: value === "debate" ? "translateX(0)" : "translateX(100%)" }}
+      />
+      {WORLDS.map((item) => {
+        const active = item === value;
+        return (
+          <button
+            key={item}
+            type="button"
+            aria-pressed={active}
+            onClick={() => onChange(item)}
+            className={[
+              "relative z-10 rounded-full px-4 py-1.5 font-display text-[0.78rem] transition-colors",
+              active
+                ? "text-[var(--s-fg)]"
+                : "text-[var(--s-muted)] hover:text-[var(--s-fg)]",
+            ].join(" ")}
+          >
+            {WORLD_LABELS[item].name}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/**
+ * One home, two worlds.
+ *
+ * The switch lives here rather than in the URL: both worlds were resolved on the
+ * server and handed over together, so changing world is a state change, not a
+ * navigation — no spinner, no losing your place. The prompt library stays on the
+ * server (`WorldUI` carries the label and the two timers), which keeps zod and
+ * ~700 lines of prompts out of the browser bundle.
+ */
 export default function StudioDashboard({
   data,
-  guide,
+  ui,
 }: {
   data: DashboardData;
-  guide: GuideItem[];
+  ui: Record<World, WorldUI>;
 }) {
-  const { firstName, learner, progress, totals, skills, metrics, capture } = data;
-  const world = "debate" as const;
+  const { firstName, learner, progress, totals, skills, metrics, capture, level } = data;
+  const [world, setWorld] = useState<World>("debate");
   const prompt = data.today[world];
-  const prep = prepSeconds(prompt.format);
-  const speak = speakSeconds(prompt.format);
+  const prep = ui[world].prep;
+  const speak = ui[world].speak;
+  const guide = buildGuide(data, world);
   const lead = guide[0];
   const second = guide[1];
   const weekReps = data.week[world].reduce((sum, day) => sum + day.reps, 0);
 
   return (
     <div className="px-4 pb-28 pt-4 sm:px-6 lg:px-8 lg:pb-8 lg:pt-6">
+      {/* world switch — the same control at both sizes, one above the desk and
+          one under the greeting on a phone */}
+      <div className="mb-4 hidden items-center gap-3 lg:flex">
+        <span className="font-display text-[0.58rem] uppercase tracking-[0.18em] text-[var(--s-faint)]">
+          Practice world
+        </span>
+        <WorldSwitch value={world} onChange={setWorld} />
+      </div>
+
       {/* ================= desktop ================= */}
-      <div className="hidden lg:grid lg:grid-cols-[minmax(0,1fr)_24.5rem] lg:gap-5">
+      <div className="hidden lg:grid lg:grid-cols-[minmax(0,1fr)_27rem] lg:gap-5">
         <div className="flex min-w-0 flex-col gap-5">
           {/* hero */}
           <section className="s-card s-rise relative isolate overflow-hidden">
@@ -128,7 +205,7 @@ export default function StudioDashboard({
               src="/img/hero-bust.webp"
               alt=""
               aria-hidden="true"
-              className="s-float pointer-events-none absolute -bottom-10 right-0 h-[21rem] w-auto object-contain mix-blend-lighten"
+              className="s-float pointer-events-none absolute -bottom-8 right-0 h-[17.5rem] w-auto object-contain mix-blend-lighten"
               style={{
                 maskImage:
                   "radial-gradient(75% 78% at 62% 46%, black 42%, rgba(0,0,0,0.35) 72%, transparent 100%)",
@@ -137,9 +214,9 @@ export default function StudioDashboard({
               }}
             />
 
-            <div className="relative max-w-[34rem] px-8 py-8">
+            <div className="relative max-w-[30rem] px-7 py-7">
               <p className="font-display text-[0.62rem] uppercase tracking-[0.22em] text-[var(--s-amber)]">
-                Your personal debate trainer
+                Your personal {WORLD_LABELS[world].name.toLowerCase()} trainer
               </p>
               <h1 className="s-serif mt-3 text-[2.6rem] font-semibold leading-[1.06] tracking-[-0.02em]">
                 Think clearly.
@@ -148,13 +225,9 @@ export default function StudioDashboard({
                   Argue confidently.
                 </span>
               </h1>
-              <p className="mt-3 max-w-[30rem] text-[0.88rem] leading-relaxed text-[var(--s-muted)]">
-                A personalised, AI-powered learning experience to build your debate
-                and critical thinking skills.
-              </p>
 
-              <div className="mt-6 flex items-center gap-3">
-                <Link href="/welcome" className="s-btn-amber relative inline-flex items-center gap-2 overflow-hidden rounded-xl px-5 py-2.5 font-display text-[0.85rem] font-semibold">
+              <div className="mt-5 flex items-center gap-3">
+                <Link href={`/welcome?format=${world}`} className="s-btn-amber relative inline-flex items-center gap-2 overflow-hidden rounded-xl px-5 py-2.5 font-display text-[0.85rem] font-semibold">
                   <svg {...svgProps} className="h-3.5 w-3.5" fill="currentColor" stroke="none">
                     <path d="M8 5.5v13l11-6.5z" />
                   </svg>
@@ -189,8 +262,8 @@ export default function StudioDashboard({
                   </svg>
                   Enter the AI Arena
                 </h2>
-                <p className="mt-1 text-[0.82rem] text-[var(--s-muted)]">
-                  {WORLD_LABELS.debate.blurb} Start where you are.
+                <p key={world} className="s-swap mt-1 text-[0.82rem] text-[var(--s-muted)]">
+                  {WORLD_LABELS[world].blurb} Start where you are.
                 </p>
               </div>
             </div>
@@ -198,7 +271,7 @@ export default function StudioDashboard({
             <div className="mt-4 grid gap-4 sm:grid-cols-3">
               {/* beginner */}
               <Link
-                href="/welcome?format=debate"
+                href={`/welcome?format=${world}`}
                 className="s-card s-card-hover group relative flex flex-col p-4"
               >
                 <span className="grid h-10 w-10 place-items-center rounded-xl bg-emerald-500/12 text-emerald-400">
@@ -218,7 +291,7 @@ export default function StudioDashboard({
 
               {/* practice — today's rep */}
               <Link
-                href="/welcome"
+                href={`/welcome?format=${world}`}
                 className="s-card s-card-hover relative flex flex-col p-4"
                 style={{ borderColor: "rgba(245,165,36,0.42)" }}
               >
@@ -232,13 +305,15 @@ export default function StudioDashboard({
                     Recommended
                   </span>
                 </span>
-                <h3 className="mt-3 font-display text-[0.95rem] font-semibold">Practice</h3>
-                <p className="mt-1 line-clamp-2 text-[0.78rem] leading-relaxed text-[var(--s-muted)]">
-                  {prompt.title}
-                </p>
-                <span className="mt-3 font-display text-[0.66rem] uppercase tracking-[0.12em] text-[var(--s-amber)]">
-                  {TOPIC_LABELS[prompt.topic]} · start now
-                </span>
+                <div key={world} className="s-swap">
+                  <h3 className="mt-3 font-display text-[0.95rem] font-semibold">Practice</h3>
+                  <p className="mt-1 line-clamp-2 text-[0.78rem] leading-relaxed text-[var(--s-muted)]">
+                    {prompt.title}
+                  </p>
+                  <span className="mt-3 block font-display text-[0.66rem] uppercase tracking-[0.12em] text-[var(--s-amber)]">
+                    {ui[world].topicLabel} · start now
+                  </span>
+                </div>
               </Link>
 
               {/* challenge — locked */}
@@ -265,7 +340,7 @@ export default function StudioDashboard({
 
           {/* learning path */}
           <section
-            className="s-card s-rise flex flex-1 flex-col p-5"
+            className="s-card s-rise flex flex-col p-5"
             style={{ animationDelay: "120ms" }}
           >
             <div className="flex items-baseline justify-between gap-3">
@@ -343,26 +418,75 @@ export default function StudioDashboard({
             </p>
           </section>
 
+          {/* activity, on the left where the eye already is */}
+          <section className="s-card s-rise p-5" style={{ animationDelay: "160ms" }}>
+            <div className="flex items-baseline justify-between gap-3">
+              <h2 className="font-display text-[0.95rem] font-semibold">This week</h2>
+              <p className="font-display text-[0.7rem] tabular-nums text-[var(--s-muted)]">
+                {weekReps} rep{weekReps === 1 ? "" : "s"}
+              </p>
+            </div>
+            <div className="mt-3 flex items-end justify-between gap-1.5" aria-hidden="true">
+              {data.week[world].map((day) => {
+                const max = Math.max(1, ...data.week[world].map((d) => d.reps));
+                return (
+                  <span key={day.iso} className="flex flex-1 flex-col items-center gap-1">
+                    <span className="flex h-10 w-full items-end justify-center">
+                      <span
+                        className={
+                          day.reps > 0
+                            ? "s-fill w-2 rounded-full"
+                            : "h-1 w-1 rounded-full bg-[var(--s-line-2)]"
+                        }
+                        style={
+                          day.reps > 0
+                            ? { height: `${Math.max(16, Math.round((day.reps / max) * 100))}%` }
+                            : undefined
+                        }
+                      />
+                    </span>
+                    <span className="font-display text-[0.54rem] uppercase tracking-[0.08em] text-[var(--s-faint)]">
+                      {day.label}
+                    </span>
+                  </span>
+                );
+              })}
+            </div>
+            <p className="mt-2 text-[0.7rem] text-[var(--s-faint)]">
+              {weekReps === 0
+                ? "Nothing yet this week. One rep puts a bar here."
+                : `${WORLD_LABELS[world].name} reps this week.`}
+            </p>
+          </section>
+
         </div>
 
         {/* ---------- right rail ---------- */}
         <div className="space-y-5">
           <section className="s-card s-rise p-5" style={{ animationDelay: "40ms" }}>
-            <div className="flex items-center justify-between gap-3">
-              <h2 className="flex items-center gap-2 font-display text-[0.95rem] font-semibold">
-                <svg {...svgProps} className="h-4 w-4 text-[var(--s-amber)]">
-                  <path d="M4 20h16" />
-                  <path d="M7 20v-6M12 20V8M17 20v-9" />
-                </svg>
-                Your progress
-              </h2>
-              <span className="rounded-full border border-[var(--s-line-2)] px-2.5 py-0.5 font-display text-[0.62rem] text-[var(--s-amber)]">
-                Level {progress.level}
+            {/* The rung, in large type. A level is the first thing a learner
+                looks for, so it is not a chip in the corner any more. */}
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="font-display text-[0.58rem] uppercase tracking-[0.18em] text-[var(--s-faint)]">
+                  Your progress
+                </p>
+                <p className="mt-1.5 font-display text-[1.6rem] font-semibold leading-none tracking-[-0.01em]">
+                  Level {level.level}
+                </p>
+                <p className="mt-1 text-[0.8rem] text-[var(--s-amber)]">{level.name}</p>
+              </div>
+              <span className="shrink-0 rounded-full border border-[var(--s-line-2)] px-2.5 py-1 font-display text-[0.68rem] tabular-nums text-[var(--s-fg)]">
+                {formatPoints(level.points)} pts
               </span>
             </div>
 
             <div className="mt-4 flex items-center gap-5">
-              <Ring percent={progress.percent} id="ring-desktop" />
+              <Ring
+                percent={level.percent}
+                id="ring-desktop"
+                caption={level.nextAt ? `to L${level.level + 1}` : "max"}
+              />
               <div className="min-w-0 flex-1 space-y-3">
                 <Stat
                   icon={
@@ -395,34 +519,34 @@ export default function StudioDashboard({
                 />
               </div>
             </div>
-            <div className="mt-4 border-t border-[var(--s-line)] pt-3">
-              <div className="flex items-baseline justify-between">
-                <p className="font-display text-[0.62rem] uppercase tracking-[0.14em] text-[var(--s-faint)]">
-                  This week
+
+            {/* Where the next rung is, in points and in words. */}
+            <div className="mt-4 rounded-xl border border-[var(--s-line)] bg-[var(--s-bg)]/60 px-3.5 py-3">
+              {level.nextAt !== null ? (
+                <>
+                  <div className="flex items-baseline justify-between gap-3">
+                    <p className="font-display text-[0.58rem] uppercase tracking-[0.14em] text-[var(--s-faint)]">
+                      Next · Level {level.level + 1} {level.nextName}
+                    </p>
+                    <p className="font-display text-[0.7rem] tabular-nums text-[var(--s-amber)]">
+                      {formatPoints(level.toNext ?? 0)} pts to go
+                    </p>
+                  </div>
+                  <p className="mt-1.5 text-[0.76rem] leading-relaxed text-[var(--s-muted)]">
+                    {level.unlocks}
+                  </p>
+                  <p className="mt-2 text-[0.68rem] tabular-nums text-[var(--s-faint)]">
+                    {formatPoints(level.points)} of {formatPoints(level.nextAt)} points
+                  </p>
+                </>
+              ) : (
+                <p className="text-[0.76rem] leading-relaxed text-[var(--s-muted)]">
+                  Top of the ladder — {formatPoints(level.points)} points. New rungs
+                  arrive as the coach does.
                 </p>
-                <p className="font-display text-[0.66rem] tabular-nums text-[var(--s-muted)]">
-                  {weekReps} reps · {totals.xp} XP
-                </p>
-              </div>
-              <div className="mt-2 flex items-end justify-between gap-1.5" aria-hidden="true">
-                {data.week[world].map((day) => {
-                  const max = Math.max(1, ...data.week[world].map((d) => d.reps));
-                  return (
-                    <span key={day.iso} className="flex flex-1 flex-col items-center gap-1">
-                      <span className="flex h-9 w-full items-end justify-center">
-                        <span
-                          className={day.reps > 0 ? "s-fill w-1.5 rounded-full" : "h-1 w-1 rounded-full bg-[var(--s-line-2)]"}
-                          style={day.reps > 0 ? { height: `${Math.max(16, Math.round((day.reps / max) * 100))}%` } : undefined}
-                        />
-                      </span>
-                      <span className="font-display text-[0.5rem] uppercase tracking-[0.08em] text-[var(--s-faint)]">
-                        {day.label}
-                      </span>
-                    </span>
-                  );
-                })}
-              </div>
+              )}
             </div>
+
           </section>
 
           <section id="progress" className="s-card s-rise p-5" style={{ animationDelay: "90ms" }}>
@@ -473,7 +597,7 @@ export default function StudioDashboard({
               Recent feedback
             </h2>
 
-            <div className="mt-4 space-y-3">
+            <div key={world} className="s-swap mt-4 space-y-3">
               {lead ? (
                 <div className="rounded-xl border border-emerald-400/25 bg-emerald-500/8 p-3">
                   <p className="flex items-center gap-2 font-display text-[0.58rem] uppercase tracking-[0.14em] text-emerald-300">
@@ -507,6 +631,7 @@ export default function StudioDashboard({
           </section>
 
         </div>
+
         {/* daily workout — full width, the last thing on the desk */}
         <section
           className="s-card s-rise relative overflow-hidden p-5 lg:col-span-2"
@@ -535,7 +660,7 @@ export default function StudioDashboard({
               </div>
             </div>
 
-            <div className="min-w-0 flex-1">
+            <div key={world} className="s-swap min-w-0 flex-1">
               <p className="truncate font-display text-[0.86rem] font-medium">{prompt.title}</p>
               <p className="mt-0.5 truncate text-[0.76rem] text-[var(--s-muted)]">
                 {prompt.angle}
@@ -543,7 +668,7 @@ export default function StudioDashboard({
             </div>
 
             <Link
-              href="/welcome"
+              href={`/welcome?format=${world}`}
               className="s-btn-amber inline-flex shrink-0 items-center gap-2 rounded-xl px-4 py-2 font-display text-[0.8rem] font-semibold"
             >
               Start exercise
@@ -575,9 +700,13 @@ export default function StudioDashboard({
               training is ready.
             </span>
           </h1>
-          <p className="mt-2 max-w-[22rem] text-[0.82rem] text-[var(--s-muted)]">
-            Continue building your debating skills.
+          <p className="mt-2 max-w-[14rem] text-[0.82rem] text-[var(--s-muted)] sm:max-w-[22rem]">
+            {WORLD_LABELS[world].blurb}
           </p>
+
+          <div className="mt-4">
+            <WorldSwitch value={world} onChange={setWorld} full />
+          </div>
 
           <img
             src="/img/hero-bust.webp"
@@ -601,12 +730,14 @@ export default function StudioDashboard({
             </svg>
             Recommended for you
           </p>
-          <h2 className="mt-2 font-display text-[1.15rem] font-semibold leading-snug">
-            {WORLD_LABELS.debate.name} · {TOPIC_LABELS[prompt.topic]}
-          </h2>
-          <p className="mt-1 line-clamp-2 text-[0.8rem] leading-relaxed text-[var(--s-muted)]">
-            {prompt.title}
-          </p>
+          <div key={world} className="s-swap">
+            <h2 className="mt-2 font-display text-[1.15rem] font-semibold leading-snug">
+              {WORLD_LABELS[world].name} · {ui[world].topicLabel}
+            </h2>
+            <p className="mt-1 line-clamp-2 text-[0.8rem] leading-relaxed text-[var(--s-muted)]">
+              {prompt.title}
+            </p>
+          </div>
 
           <div className="mt-3 flex items-center gap-2 text-[0.62rem] uppercase tracking-[0.1em] text-[var(--s-faint)]">
             <span className="flex flex-col items-center gap-1">
@@ -635,7 +766,7 @@ export default function StudioDashboard({
           </div>
 
           <Link
-            href="/welcome"
+            href={`/welcome?format=${world}`}
             className="s-btn-amber mt-4 flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 font-display text-[0.86rem] font-semibold"
           >
             <svg {...svgProps} className="h-3.5 w-3.5" fill="currentColor" stroke="none">
@@ -648,10 +779,20 @@ export default function StudioDashboard({
 
         {/* progress */}
         <section className="s-card mt-3 flex items-center gap-4 p-4">
-          <Ring percent={progress.percent} size={86} id="ring-mobile" />
+          <Ring
+            percent={level.percent}
+            size={86}
+            id="ring-mobile"
+            caption={level.nextAt ? `to L${level.level + 1}` : "max"}
+          />
           <div className="min-w-0 flex-1">
-            <p className="font-display text-[0.8rem] font-medium">Level {progress.level}</p>
-            <p className="text-[0.72rem] text-[var(--s-muted)]">Developing debater</p>
+            <p className="font-display text-[0.95rem] font-semibold leading-tight">
+              Level {level.level} · {level.name}
+            </p>
+            <p className="mt-0.5 text-[0.72rem] tabular-nums text-[var(--s-muted)]">
+              {formatPoints(level.points)} pts
+              {level.toNext !== null ? ` · ${formatPoints(level.toNext)} to go` : ""}
+            </p>
             <p className="mt-1 text-[0.72rem] text-[var(--s-amber)]">
               {totals.streak} day{totals.streak === 1 ? "" : "s"} streak
             </p>
@@ -673,7 +814,7 @@ export default function StudioDashboard({
             </p>
           </div>
           <Link
-            href="/welcome"
+            href={`/welcome?format=${world}`}
             aria-label="Start the daily workout"
             className="s-btn-amber grid h-9 w-9 place-items-center rounded-full"
           >

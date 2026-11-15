@@ -1720,3 +1720,100 @@ never presented as shipped. The gap is now written down rather than implied.
 **Still unverified:** the corrected function has been reviewed, not executed. No
 Postgres exists here; it needs to be run in the Supabase SQL editor before
 `/history` can be trusted.
+
+---
+
+### S-33 — 2026-11-14 — One home, two worlds, and a switch that slides
+
+**The gap.** The studio had one dashboard: the debate one. Extempore existed in the
+schema, the prompt library and the rating table, and was reachable only by editing a
+URL. A learner with one login and two worlds could see half of their own progress.
+
+**D-102 — the switch is state, not navigation.** Both worlds were already resolved on
+the server by `loadDashboard()`. The switch therefore costs no request: it is a
+`useState<World>` in a client component, and the panel contents fade in behind a
+thumb that slides in 300ms. The one thing that must *not* be sent to the browser is
+the prompt library — `WorldUI` carries the topic label and the two timers, so zod and
+the ~700-line prompt file stay server-side.
+
+What actually changes with the world: the hero eyebrow ("your personal **extempore**
+trainer"), the hero sentence, the arena's own caption, the Practice card's motion and
+topic, both tier cards' timers, the feedback items (guide is rebuilt per world), the
+weekly sparkline, and every "start" link, which now carries `?format=debate|extempore`
+into `/welcome`.
+
+What deliberately does not: the streak, the gates, the ring, the skill bars. Days are
+global and skills are measured once from the baseline — a per-world streak would be a
+nicer story and a lie.
+
+**The control.** Two options, one sliding thumb, `aria-pressed`, real buttons, no
+custom keyboard handling needed. Desktop: a `PRACTICE WORLD` row above the desk.
+Phone: full-width, directly under the greeting, where a thumb already is.
+
+**Found by looking:** `1 rep` printed as `1 reps`; the hero eyebrow and sentence still
+named debate while the Practice card showed an extempore motion; the arena caption
+was debate-only; the phone greeting's blurb ran under the bust and needed a narrower
+measure; "Developing debater" followed the reader into extempore.
+
+**Verified:** `tsc` clean, `next build` green, `npm test` 7/7, `audit:styles` 6/6,
+`/dashboard` still `307 → /signin?state=expired`. Screenshots at 1440 and 390 — both
+worlds, reached by actually clicking the control — in `tools/shots/switch-debate.png`,
+`switch-extempore2.png`, `mobile-debate.png`, `mobile-extempore.png`.
+
+**Not verified:** the transition's *feel* on a real phone (the sandbox photographs a
+settled frame, and reduced motion is what it emulates), and both worlds with a real
+account, where ratings are defaults rather than measured.
+
+---
+
+### S-34 — 2026-11-14 — Levels in points, and the analytics box finally says something
+
+**What the owner asked for, and what changed.** Remove the hero paragraph; narrow
+the desk so the analytics column can breathe; put "Level 1" in large type at the top
+of that column; start the ring at zero; define the ladder in points (1,000 → 2,500 →
+4,000, then +1,500 a rung); and give every rung a sentence a learner understands.
+
+**D-103 — a level is a rung with a sentence, not a badge.** `lib/dashboard/levels.ts`
+holds the ladder: eight rungs, each with a threshold, a name, and two sentences —
+what you can do here, and what the next rung asks of you. The thresholds are product
+decisions, and they are written in one file with one function reading them, because
+changing them changes what every learner sees:
+
+| Rung | Points | Name | The ask |
+|---|---|---|---|
+| 1 | 0 | First words | a week of reps |
+| 2 | 1,000 | Steady voice | structure — claim, evidence, impact |
+| 3 | 2,500 | Clear structure | pressure — answering the objection |
+| 4 | 4,000 | Under pressure | precision — openings and endings |
+| 5 | 5,500 | Sharpened | persuasion |
+| 6 | 7,000 | Persuasive | consistency at length |
+| 7 | 8,500 | Arena ready | harder rooms |
+| 8 | 10,000 | Veteran | — |
+
+**D-104 — points are shared, ratings are not.** Points are the sum of both worlds'
+XP: speaking is speaking, and a rep in either world climbs one ladder. Ratings stay
+per world, because those are measured against different rubrics. The ring is now
+"progress to the next rung" — exactly 0% for a fresh account, which is what a new
+learner should see — and the four setup gates keep their own 25% each on
+`/progress`, where they belong.
+
+**D-105 — the hero does not explain itself.** The paragraph under the serif pair is
+gone. A screen people see every day should not re-pitch itself each visit; the line
+now sits where a stranger reads it once, and the space goes to the skeleton
+(eyebrow → headline → action). Desk narrowed, analytics column widened to 27rem.
+
+**M-037 — the page grew a hole.** Removing the paragraph made the left column
+shorter, and the learning-path card, which was `flex-1`, stretched to fill the
+difference: a 300px card holding 1,000px of air. Fixed by moving the weekly chart
+out of the analytics card and into the left column, then letting the path keep its
+natural height. Both columns now bottom out within 40px of each other at 1440.
+
+**Verified:** `tsc` clean, `next build` green, `npm test` 7/7, `audit:styles` 6/6.
+Screenshots with fixtures at 0 points and 1,040 points, plus the ladder page at
+2,600: `tools/shots/level-zero5.png`, `level-1040b.png`, `ladder2.png`,
+`mobile-level.png`.
+
+**Not verified:** the ladder against real XP (production accounts sit at 0 points
+until reps are scored and written), and whether 1,000 points is the right first
+rung — that is a retention question, not a design one, and it needs a month of real
+reps to answer.

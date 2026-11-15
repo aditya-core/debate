@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { DashboardData } from "@/lib/dashboard/types";
 import { WORLD_LABELS } from "@/lib/dashboard/types";
+import { formatPoints } from "@/lib/dashboard/levels";
 
 const RING_R = 52;
 const RING_C = 2 * Math.PI * RING_R;
@@ -14,7 +15,7 @@ const GATE_COPY: Record<string, string> = {
   level: "Enough scored reps for the next level to mean something.",
 };
 
-function Ring({ percent }: { percent: number }) {
+function Ring({ percent, caption }: { percent: number; caption: string }) {
   const offset = RING_C * (1 - Math.max(0, Math.min(100, percent)) / 100);
   return (
     <div className="relative h-[104px] w-[104px] shrink-0">
@@ -44,7 +45,7 @@ function Ring({ percent }: { percent: number }) {
             {percent}%
           </p>
           <p className="mt-1 font-display text-[0.52rem] uppercase tracking-[0.14em] text-[var(--s-faint)]">
-            Complete
+            {caption}
           </p>
         </div>
       </div>
@@ -67,7 +68,7 @@ function Figure({ label, value, hint }: { label: string; value: string; hint?: s
 }
 
 export default function ProgressView({ data }: { data: DashboardData }) {
-  const { skills, totals, metrics, worlds, progress, capture } = data;
+  const { skills, totals, metrics, worlds, progress, capture, level, levels } = data;
   const measured = skills.filter((skill) => skill.value !== null).length;
 
   return (
@@ -98,9 +99,16 @@ export default function ProgressView({ data }: { data: DashboardData }) {
 
       <section className="s-card mt-6 p-5 lg:p-6">
         <div className="flex flex-wrap items-center gap-6">
-          <Ring percent={progress.percent} />
+          <Ring
+            percent={level.percent}
+            caption={level.nextAt ? `to L${level.level + 1}` : "max"}
+          />
           <div className="grid flex-1 gap-5 sm:grid-cols-4">
-            <Figure label="Level" value={String(progress.level)} hint="Moves with scored reps" />
+            <Figure
+              label="Level"
+              value={String(level.level)}
+              hint={level.toNext !== null ? `${formatPoints(level.toNext)} pts to ${level.nextName}` : level.name}
+            />
             <Figure label="Reps" value={String(totals.reps)} hint="Completed sessions" />
             <Figure
               label="Streak"
@@ -205,6 +213,78 @@ export default function ProgressView({ data }: { data: DashboardData }) {
           </ol>
         </section>
       </div>
+
+
+      {/* The ladder, with its rungs written down. A level with no sentence
+          attached is a badge, and badges do not tell anyone what to do next. */}
+      <section className="s-card mt-5 p-5 lg:p-6">
+        <div className="flex flex-wrap items-baseline justify-between gap-3">
+          <h2 className="font-display text-[1rem] font-semibold">The ladder</h2>
+          <p className="text-[0.74rem] tabular-nums text-[var(--s-faint)]">
+            {formatPoints(level.points)} points
+            {level.nextAt !== null
+              ? ` · ${formatPoints(level.floor)} → ${formatPoints(level.nextAt)} for Level ${level.level + 1}`
+              : " · top of the ladder"}
+          </p>
+        </div>
+
+        <ol className="mt-4 space-y-2">
+          {levels.map((step) => {
+            const done = level.points >= step.at;
+            const current = step.level === level.level;
+            return (
+              <li
+                key={step.level}
+                className={[
+                  "flex flex-wrap items-baseline gap-x-3 gap-y-1 rounded-xl border px-3.5 py-3",
+                  current
+                    ? "border-[var(--s-amber)]/40 bg-[var(--s-amber)]/8"
+                    : "border-[var(--s-line)]",
+                ].join(" ")}
+              >
+                <span
+                  className={[
+                    "grid h-6 w-6 shrink-0 place-items-center rounded-full border font-display text-[0.6rem]",
+                    done
+                      ? "border-emerald-400/50 bg-emerald-500/15 text-emerald-300"
+                      : "border-[var(--s-line-2)] text-[var(--s-faint)]",
+                  ].join(" ")}
+                >
+                  {step.level}
+                </span>
+                <p
+                  className={[
+                    "font-display text-[0.86rem] font-medium",
+                    current ? "text-[var(--s-fg)]" : "text-[var(--s-muted)]",
+                  ].join(" ")}
+                >
+                  {step.name}
+                </p>
+                <p className="font-display text-[0.66rem] tabular-nums text-[var(--s-faint)]">
+                  {step.at === 0 ? "from the start" : `${formatPoints(step.at)} pts`}
+                </p>
+                {current ? (
+                  <span className="rounded-full bg-[var(--s-amber)]/15 px-1.5 py-0.5 font-display text-[0.5rem] uppercase tracking-[0.1em] text-[var(--s-amber)]">
+                    you are here
+                  </span>
+                ) : null}
+                <p className="w-full text-[0.76rem] leading-relaxed text-[var(--s-muted)]">
+                  {step.blurb}
+                </p>
+                <p className="w-full text-[0.74rem] leading-relaxed text-[var(--s-faint)]">
+                  Next: {step.unlocks}
+                </p>
+              </li>
+            );
+          })}
+        </ol>
+
+        <p className="mt-4 text-[0.72rem] leading-relaxed text-[var(--s-faint)]">
+          Points are the sum of both worlds — speaking is speaking. The thresholds
+          are a product decision, not a measurement; they are written here so you
+          can see exactly what a level costs.
+        </p>
+      </section>
 
       <section className="s-card mt-5 p-5 lg:p-6">
         <div className="flex flex-wrap items-baseline justify-between gap-3">

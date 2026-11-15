@@ -1341,12 +1341,30 @@ html.reveal-fallback .reveal {
   animation: s-sheen 3.6s ease-in-out infinite;
 }
 
+/* World swap: the contents of a panel when the learner changes world. Short,
+   because it may fire twice in a second while someone compares the two. */
+@keyframes s-swap {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.s-swap {
+  animation: s-swap 0.24s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .s-glow,
   .s-float,
   .s-rise,
   .s-ring-arc,
-  .s-shine::after {
+  .s-shine::after,
+  .s-swap {
     animation: none;
   }
 }

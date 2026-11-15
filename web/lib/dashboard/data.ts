@@ -4,6 +4,7 @@ import { getLatestCapture } from "@/lib/practice/capture";
 import { pickPrompt } from "@/lib/practice/prompts";
 import type { DashboardData, PathStep, SkillRow, WeekDay, World } from "@/lib/dashboard/types";
 import { wordsPerMinute } from "@/lib/practice/metrics";
+import { LEVELS, levelFor } from "@/lib/dashboard/levels";
 
 /**
  * Everything the dashboard shows, in one read.
@@ -102,6 +103,10 @@ export async function loadDashboard(
   const allDates = [...debateRows, ...extemporeRows].map((row) => isoDay(row.started_at));
 
   const reps = debateRows.length + extemporeRows.length;
+  // Points are the sum of both worlds' XP: speaking in either world climbs the
+  // same ladder. Ratings stay per world.
+  const points =
+    (debateProfile.data?.xp ?? 0) + (extemporeProfile.data?.xp ?? 0);
   const wpm = capture ? wordsPerMinute(capture.word_count, capture.duration_ms) : null;
 
   /**
@@ -199,7 +204,9 @@ export async function loadDashboard(
       extempore: weekFrom(extemporeRows.map((row) => isoDay(row.started_at)), now),
     },
     capture,
-    progress: { percent, level: 1 + Math.floor(reps / 10) },
+    progress: { percent, level: levelFor(points).level },
+    level: levelFor(points),
+    levels: LEVELS,
     path,
     skills,
     metrics: { words: capture?.word_count ?? null, wpm },
